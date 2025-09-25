@@ -7,8 +7,8 @@ import (
 	"github.com/prospera/internals/models"
 )
 
-func HandleError(ctx *gin.Context, code int, status, err, err_real string) {
-	log.Printf("%s ----- Cause: %s\n", status, err_real)
+func HandleError(ctx *gin.Context, code int, status, err string, err_real error) {
+	log.Printf("%s ----- Cause: %s\n", status, err_real.Error())
 	ctx.JSON(code, models.NewErrorResponse(status, err, code))
 }
 

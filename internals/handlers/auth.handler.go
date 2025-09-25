@@ -22,7 +22,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	var req models.RegisterRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data", err.Error())
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data", err)
 		return
 	}
 
@@ -31,12 +31,12 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	hashConfig.UseRecommended()
 	hashedPassword, err := hashConfig.GenHash(req.Password)
 	if err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed hashed password", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed hashed password", err)
 		return
 	}
 
 	if err := h.Repo.Register(ctx, req.Email, hashedPassword); err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed created account", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed created account", err)
 		return
 	}
 
@@ -51,18 +51,18 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	var req models.LoginRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data", err.Error())
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data", err)
 		return
 	}
 
 	// Cari akun
 	userID, hashedPassword, isPinExist, err := h.Repo.Login(ctx.Request.Context(), req.Email)
 	if err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "user not found", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "user not found", err)
 		return
 	}
 	if userID == 0 {
-		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "user not found", err.Error())
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "user not found", err)
 		return
 	}
 
@@ -70,11 +70,11 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	hashConfig := pkg.NewHashConfig()
 	match, err := hashConfig.ComparePasswordAndHash(req.Password, hashedPassword)
 	if err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed compare password", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed compare password", err)
 		return
 	}
 	if !match {
-		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid password", err.Error())
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid password", err)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	claims := pkg.NewJWTClaims(userID)
 	token, err := claims.GenToken()
 	if err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed generate token", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed generate token", err)
 		return
 	}
 
