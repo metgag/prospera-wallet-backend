@@ -59,17 +59,17 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 
 func (r *Auth) Login(ctx context.Context, email string) (int, string, bool, error) {
 	query := `SELECT id, password, pin FROM accounts WHERE email = $1`
-	var id int
-	var hashedPassword string
+	var id *int
+	var hashedPassword *string
 	var pin *string
 	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword, &pin)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, "", false, nil
+			return 0, "", false, fmt.Errorf("user not found")
 		}
 		return 0, "", false, err
 	}
 
 	isPinExist := pin != nil && *pin != ""
-	return id, hashedPassword, isPinExist, nil
+	return *id, *hashedPassword, isPinExist, nil
 }
