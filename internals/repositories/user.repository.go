@@ -18,7 +18,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 
 func (ur *UserRepository) GetUser(rctx context.Context, uid int) ([]models.User, error) {
 	sql := `
-		SELECT fullname
+		SELECT fullname, phone, img
 		FROM profiles
 		WHERE id != $1
 	`
@@ -34,6 +34,8 @@ func (ur *UserRepository) GetUser(rctx context.Context, uid int) ([]models.User,
 		var user models.User
 		if err := rows.Scan(
 			&user.FullName,
+			&user.PhoneNumber,
+			&user.Avatar,
 		); err != nil {
 			return nil, err
 		}
