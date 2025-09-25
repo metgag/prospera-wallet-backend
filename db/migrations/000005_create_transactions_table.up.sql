@@ -1,3 +1,5 @@
+CREATE TYPE type_transaction AS ENUM ('transfer', 'top_up');
+
 CREATE TABLE public.transactions (
     id              INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     type            type_transaction NOT NULL,
