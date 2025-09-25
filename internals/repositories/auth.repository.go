@@ -38,14 +38,14 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 	}
 
 	// insert ke profiles
-	queryUser := `INSERT INTO profiles (fullname, phone, img) VALUES (NULL, NULL, NULL);`
-	if _, err = tx.Exec(ctx, queryUser); err != nil {
+	queryUser := `INSERT INTO profiles (id, fullname, phone, img) VALUES ($1, NULL, NULL, NULL);`
+	if _, err = tx.Exec(ctx, queryUser, userID); err != nil {
 		return fmt.Errorf("failed to insert profiles = %w", err)
 	}
 
 	// insert ke wallets
-	queryWallet := `INSERT INTO wallets (balance) VALUES (0);`
-	if _, err = tx.Exec(ctx, queryWallet); err != nil {
+	queryWallet := `INSERT INTO wallets (id, balance) VALUES ($id, 0);`
+	if _, err = tx.Exec(ctx, queryWallet, userID); err != nil {
 		return fmt.Errorf("failed to insert wallets = %w", err)
 	}
 
