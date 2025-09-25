@@ -57,17 +57,24 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 	return nil
 }
 
-func (r *Auth) Login(ctx context.Context, email string) (int, string, error) {
-	query := `SELECT id, password FROM accounts WHERE email = $1`
-
+func (r *Auth) Login(ctx context.Context, email string) (int, string, bool, error) {
+	query := `SELECT id, password FROM accounts WHERE email = $1 RETURNING pin`
 	var id int
-	var hashedPassword string
-	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword)
+	var hashedPassword, pin string
+	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword, &pin)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, "", nil
+			return 0, "", false, nil
 		}
-		return 0, "", err
+		return 0, "", false, err
 	}
-	return id, hashedPassword, nil
+
+	var isPinExist bool
+	if pin != "" {
+		isPinExist = true
+	} else {
+		isPinExist = false
+	}
+
+	return id, hashedPassword, isPinExist, nil
 }

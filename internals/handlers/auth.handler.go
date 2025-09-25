@@ -56,7 +56,7 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	}
 
 	// Cari akun
-	userID, hashedPassword, err := h.Repo.Login(ctx.Request.Context(), req.Email)
+	userID, hashedPassword, isPinExist, err := h.Repo.Login(ctx.Request.Context(), req.Email)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "user not found")
 		return
@@ -87,8 +87,9 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, models.ResponseLogin{
-		Success: true,
-		Message: "Login successful",
-		Token:   token,
+		Success:    true,
+		Message:    "Login successful",
+		Token:      token,
+		IsPinExist: isPinExist,
 	})
 }
