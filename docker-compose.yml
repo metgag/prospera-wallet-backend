@@ -1,0 +1,17 @@
+services:
+  db-pg-server-1:
+    image: postgres:15
+    container_name: db-pg-server
+    environment:
+      POSTGRES_USER: rangga
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: mydb
+    ports:
+      - "5434:5432"   # Host 5434 → Container 5432
+    volumes:
+      - db-pg:/var/lib/postgresql/data
+
+volumes:
+  db-pg-data:
+    external: true
+      
