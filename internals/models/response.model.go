@@ -7,7 +7,8 @@ type Response[T any] struct {
 }
 
 type ResponseLogin struct {
-	Success bool   `json:"success" example:"true"`
-	Message string `json:"message" example:"Request processed successfully"`
-	Token   string `json:"token"`
+	Success    bool   `json:"success" example:"true"`
+	Message    string `json:"message" example:"Request processed successfully"`
+	Token      string `json:"token"`
+	IsPinExist bool   `json:"isPinExist" example:"false"`
 }
