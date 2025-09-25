@@ -12,7 +12,7 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool) {
 	handler := handlers.NewAuthHandler(repo)
 
 	auth := router.Group("/auth")
-	// auth.POST("", handler.Login)
+	auth.POST("", handler.Login)
 	// auth.DELETE("", handler.Logout)
 	auth.POST("/register", handler.Register)
 }

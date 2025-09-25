@@ -2,8 +2,10 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -55,37 +57,17 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 	return nil
 }
 
-// func (r *Auth) Login(ctx context.Context, email string) (int, string, string, error) {
-// 	query := `SELECT id, role, password FROM account WHERE email = $1`
-// 	var id int
-// 	var role string
-// 	var hashedPassword string
+func (r *Auth) Login(ctx context.Context, email string) (int, string, error) {
+	query := `SELECT id, password FROM accounts WHERE email = $1`
 
-// 	err := r.db.QueryRow(ctx, query, email).Scan(&id, &role, &hashedPassword)
-// 	if err != nil {
-// 		if errors.Is(err, pgx.ErrNoRows) {
-// 			return 0, "", "", nil // ✅ biar bisa bedain di handler
-// 		}
-// 		return 0, "", "", err
-// 	}
-// 	return id, role, hashedPassword, nil
-// }
-
-// func (r *Auth) BlacklistToken(ctx context.Context, token string, expiresIn time.Duration) error {
-// 	data := models.BlacklistToken{
-// 		Token:     token,
-// 		ExpiresIn: expiresIn,
-// 	}
-// 	bt, err := json.Marshal(data)
-// 	if err != nil {
-// 		log.Println("❌ Internal Server Error.\nCause:", err)
-// 		return err
-// 	}
-
-// 	if err := r.rdb.Set(ctx, "blacklist:"+token, bt, expiresIn).Err(); err != nil {
-// 		log.Printf("❌ Redis Error.\nCause: %s\n", err)
-// 		return err
-// 	}
-
-// 	return nil
-// }
+	var id int
+	var hashedPassword string
+	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, "", nil
+		}
+		return 0, "", err
+	}
+	return id, hashedPassword, nil
+}
