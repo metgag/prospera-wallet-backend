@@ -11,8 +11,8 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool) {
 	ur := repositories.NewUserRepository(db)
 	uh := handlers.NewUserHandler(ur)
 
-	userGroup := router.Group("/user")
+	userGroup := router.Group("/users")
 
-	userGroup.GET("", uh.HandlerGetUsers)
+	userGroup.GET("/all", uh.HandlerGetAllUsers)
 	userGroup.GET("/transactions", uh.HandleGetUserTransactionsHistory)
 }
