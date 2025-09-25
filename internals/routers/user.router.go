@@ -1,0 +1,18 @@
+package routers
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prospera/internals/handlers"
+	"github.com/prospera/internals/repositories"
+)
+
+func InitUserRouter(router *gin.Engine, db *pgxpool.Pool) {
+	ur := repositories.NewUserRepository(db)
+	uh := handlers.NewUserHandler(ur)
+
+	userGroup := router.Group("/user")
+
+	userGroup.GET("", uh.HandlerGetUsers)
+	userGroup.GET("/transactions", uh.HandleGetUserTransactionsHistory)
+}
