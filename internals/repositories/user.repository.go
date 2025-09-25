@@ -65,15 +65,17 @@ func (ur *UserRepository) UpdateUserPin(rctx context.Context, newPin string, uid
 func (ur *UserRepository) GetUserHistoryTransactions(rctx context.Context, uid, limit, offset int) (models.UserHistoryTransactions, error) {
 	sql := `
 		SELECT
-			t.id_receiver, p.img, p.fullname, p.phone, t.type, t.total
-		FROM
-			transactions t
-		JOIN
-			profiles p ON p.id = t.id_receiver
-		WHERE
-			t.deleted_at IS NULL
-		AND
-			t.id_sender = $1
+			t.id_receiver,
+			p.img,
+			p.fullname,
+			p.phone,
+			t.type,
+			t.total
+		FROM transactions t
+		LEFT JOIN profiles p ON p.id = t.id_receiver
+		WHERE t.deleted_at IS NULL
+		AND t.id_sender = $1
+		ORDER BY t.created_at DESC;
 	`
 
 	rows, err := ur.db.Query(rctx, sql, uid)
