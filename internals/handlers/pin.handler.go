@@ -9,7 +9,7 @@ import (
 	"github.com/prospera/internals/utils"
 )
 
-func (h *AuthHandler) CreatePIN(ctx *gin.Context) {
+func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
 	var req models.PINRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -33,14 +33,14 @@ func (h *AuthHandler) CreatePIN(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.Repo.CreatePIN(ctx, hashedPIN, uid); err != nil {
+	if err := h.Repo.UpdatePIN(ctx, hashedPIN, uid); err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed created account", err)
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, models.Response[string]{
 		Success: true,
-		Message: "Register successful",
+		Message: "Register PIN successful",
 		Data:    "",
 	})
 }
