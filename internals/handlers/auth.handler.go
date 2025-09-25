@@ -46,3 +46,49 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 		Data:    "",
 	})
 }
+
+func (h *AuthHandler) Login(ctx *gin.Context) {
+	var req models.LoginRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data")
+		return
+	}
+
+	// Cari akun
+	userID, hashedPassword, err := h.Repo.Login(ctx.Request.Context(), req.Email)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "user not found")
+		return
+	}
+	if userID == 0 {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "user not found")
+		return
+	}
+
+	// Verifikasi password
+	hashConfig := pkg.NewHashConfig()
+	match, err := hashConfig.ComparePasswordAndHash(req.Password, hashedPassword)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed compare password")
+		return
+	}
+	if !match {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid password")
+		return
+	}
+
+	// Generate JWT
+	claims := pkg.NewJWTClaims(userID)
+	token, err := claims.GenToken()
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed generate token")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.ResponseLogin{
+		Success: true,
+		Message: "Login successful",
+		Token:   token,
+	})
+}
