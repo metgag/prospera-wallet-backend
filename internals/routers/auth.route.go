@@ -21,6 +21,6 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool) {
 	auth.POST("/register", handler.Register)
 
 	//Create PIN
-	auth.POST("/pin", middlewares.Authentication, handler.Register)
+	auth.POST("/pin", middlewares.Authentication, handler.CreatePIN)
 	// auth.DELETE("", handler.Logout)
 }
