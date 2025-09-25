@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,14 +20,12 @@ func NewUserHandler(ur *repositories.UserRepository) *UserHandler {
 func (uh *UserHandler) HandlerGetUsers(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
-		log.Println("get user token error: ", err)
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token")
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
 	}
 
 	users, err := uh.ur.GetUser(ctx.Request.Context(), uid)
 	if err != nil {
-		log.Println("get user error: ", err)
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get users")
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get users", err)
 		return
 	}
 
@@ -42,15 +39,13 @@ func (uh *UserHandler) HandlerGetUsers(ctx *gin.Context) {
 func (uh *UserHandler) HandleGetUserTransactionsHistory(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
-		log.Println("", err.Error())
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction")
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction", err)
 		return
 	}
 
 	history, err := uh.ur.GetUserHistoryTransactions(ctx, uid, 0, 0)
 	if err != nil {
-		log.Println("get user's history transaction error: ", err.Error())
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction")
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction", err)
 		return
 	}
 
