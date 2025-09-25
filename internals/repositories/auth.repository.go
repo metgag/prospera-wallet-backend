@@ -44,7 +44,7 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 	}
 
 	// insert ke wallets
-	queryWallet := `INSERT INTO wallets (id, balance) VALUES ($id, 0);`
+	queryWallet := `INSERT INTO wallets (id, balance) VALUES ($1, 0);`
 	if _, err = tx.Exec(ctx, queryWallet, userID); err != nil {
 		return fmt.Errorf("failed to insert wallets = %w", err)
 	}
@@ -60,7 +60,8 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 func (r *Auth) Login(ctx context.Context, email string) (int, string, bool, error) {
 	query := `SELECT id, password, pin FROM accounts WHERE email = $1`
 	var id int
-	var hashedPassword, pin string
+	var hashedPassword string
+	var pin *string
 	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword, &pin)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -69,12 +70,6 @@ func (r *Auth) Login(ctx context.Context, email string) (int, string, bool, erro
 		return 0, "", false, err
 	}
 
-	var isPinExist bool
-	if pin != "" {
-		isPinExist = true
-	} else {
-		isPinExist = false
-	}
-
+	isPinExist := pin != nil && *pin != ""
 	return id, hashedPassword, isPinExist, nil
 }
