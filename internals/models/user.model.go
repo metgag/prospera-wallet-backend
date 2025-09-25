@@ -10,10 +10,10 @@ type UserHistoryTransactions struct {
 }
 
 type Transaction struct {
-	ReceiverID      int    `json:"receiver_id"`
-	Avatar          string `json:"avatar"`
-	FullName        string `json:"receiver_name"`
-	PhoneNumber     string `json:"receiver_phone"`
-	TransactionType string `json:"transaction_type"`
-	Total           int    `json:"total"`
+	ReceiverID      int     `json:"receiver_id"`
+	Avatar          *string `json:"avatar"`
+	FullName        *string `json:"receiver_name"`
+	PhoneNumber     *string `json:"receiver_phone"`
+	TransactionType string  `json:"transaction_type"`
+	Total           int     `json:"total"`
 }
