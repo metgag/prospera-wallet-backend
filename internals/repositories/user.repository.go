@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prospera/internals/models"
@@ -41,4 +42,64 @@ func (ur *UserRepository) GetUser(rctx context.Context, uid int) ([]models.User,
 	}
 
 	return users, nil
+}
+
+func (ur *UserRepository) UpdateUserPin(rctx context.Context, newPin string, uid int) error {
+	sql := `
+		UPDATE accounts
+		SET pin = $1
+		WHERE id = $2
+	`
+
+	ctag, err := ur.db.Exec(rctx, sql, newPin, uid)
+	if err != nil {
+		return err
+	}
+	if ctag.RowsAffected() == 0 {
+		return errors.New("unable to create user's PIN")
+	}
+
+	return nil
+}
+
+func (ur *UserRepository) GetUserHistoryTransactions(rctx context.Context, uid, limit, offset int) (models.UserHistoryTransactions, error) {
+	sql := `
+		SELECT
+			t.id_receiver, p.img, p.fullname, p.phone, t.type, t.total
+		FROM
+			transactions t
+		JOIN
+			profiles ON p WHERE p.id = t.id_receiver
+		WHERE
+			t.deleted_at IS NULL
+		AND
+			t.id_sender = $1
+	`
+
+	rows, err := ur.db.Query(rctx, sql, uid)
+	if err != nil {
+		return models.UserHistoryTransactions{}, err
+	}
+	defer rows.Close()
+
+	var transactions []models.Transaction
+	for rows.Next() {
+		var transaction models.Transaction
+		if err := rows.Scan(
+			&transaction.ReceiverID,
+			&transaction.Avatar,
+			&transaction.FullName,
+			&transaction.PhoneNumber,
+			&transaction.TransactionType,
+			&transaction.Total,
+		); err != nil {
+			return models.UserHistoryTransactions{}, err
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	return models.UserHistoryTransactions{
+		ID: uid, Transactions: transactions,
+	}, nil
 }
