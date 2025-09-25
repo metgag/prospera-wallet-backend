@@ -17,10 +17,11 @@ func NewUserHandler(ur *repositories.UserRepository) *UserHandler {
 	return &UserHandler{ur: ur}
 }
 
-func (uh *UserHandler) HandlerGetUsers(ctx *gin.Context) {
+func (uh *UserHandler) HandlerGetAllUsers(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
 	}
 
 	users, err := uh.ur.GetUser(ctx.Request.Context(), uid)
