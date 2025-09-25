@@ -38,3 +38,25 @@ func (uh *UserHandler) HandlerGetUsers(ctx *gin.Context) {
 		Data:    users,
 	})
 }
+
+func (uh *UserHandler) HandleGetUserTransactionsHistory(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		log.Println("", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction")
+		return
+	}
+
+	history, err := uh.ur.GetUserHistoryTransactions(ctx, uid, 0, 0)
+	if err != nil {
+		log.Println("get user's history transaction error: ", err.Error())
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get user's history transaction")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[models.UserHistoryTransactions]{
+		Success: true,
+		Message: "success",
+		Data:    history,
+	})
+}
