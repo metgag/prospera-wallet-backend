@@ -58,7 +58,7 @@ func (r *Auth) Register(ctx context.Context, email, password string) error {
 }
 
 func (r *Auth) Login(ctx context.Context, email string) (int, string, bool, error) {
-	query := `SELECT id, password FROM accounts WHERE email = $1 RETURNING pin`
+	query := `SELECT id, password, pin FROM accounts WHERE email = $1`
 	var id int
 	var hashedPassword, pin string
 	err := r.db.QueryRow(ctx, query, email).Scan(&id, &hashedPassword, &pin)
