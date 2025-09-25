@@ -14,4 +14,5 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool) {
 	userGroup := router.Group("/user")
 
 	userGroup.GET("", uh.HandlerGetUsers)
+	userGroup.GET("/transactions", uh.HandleGetUserTransactionsHistory)
 }
