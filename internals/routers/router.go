@@ -9,7 +9,8 @@ import (
 func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
 
-	InitAuthRoutes(router, db, rdb)
+	// Init Route Authentication
+	InitAuthRoutes(router, db)
 
 	return router
 }

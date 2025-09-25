@@ -5,11 +5,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prospera/internals/handlers"
 	"github.com/prospera/internals/repositories"
-	"github.com/redis/go-redis/v9"
 )
 
-func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
-	repo := repositories.NewAuthRepo(db, rdb)
+func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool) {
+	repo := repositories.NewAuthRepo(db)
 	handler := handlers.NewAuthHandler(repo)
 
 	auth := router.Group("/auth")
