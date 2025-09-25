@@ -69,7 +69,7 @@ func (ur *UserRepository) GetUserHistoryTransactions(rctx context.Context, uid, 
 		FROM
 			transactions t
 		JOIN
-			profiles ON p WHERE p.id = t.id_receiver
+			profiles p ON p.id = t.id_receiver
 		WHERE
 			t.deleted_at IS NULL
 		AND
