@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prospera/internals/models"
@@ -44,24 +43,6 @@ func (ur *UserRepository) GetUser(rctx context.Context, uid int) ([]models.User,
 	}
 
 	return users, nil
-}
-
-func (ur *UserRepository) UpdateUserPin(rctx context.Context, newPin string, uid int) error {
-	sql := `
-		UPDATE accounts
-		SET pin = $1
-		WHERE id = $2
-	`
-
-	ctag, err := ur.db.Exec(rctx, sql, newPin, uid)
-	if err != nil {
-		return err
-	}
-	if ctag.RowsAffected() == 0 {
-		return errors.New("unable to create user's PIN")
-	}
-
-	return nil
 }
 
 func (ur *UserRepository) GetUserHistoryTransactions(rctx context.Context, uid, limit, offset int) (models.UserHistoryTransactions, error) {
