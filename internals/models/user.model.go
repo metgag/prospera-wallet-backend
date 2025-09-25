@@ -1,7 +1,9 @@
 package models
 
 type User struct {
-	FullName string `json:"full_name"`
+	FullName    *string `json:"full_name"`
+	PhoneNumber *string `json:"phone_number"`
+	Avatar      *string `json:"avatar"`
 }
 
 type UserHistoryTransactions struct {
