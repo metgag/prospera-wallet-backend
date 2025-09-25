@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prospera/internals/models"
@@ -54,5 +55,25 @@ func (uh *UserHandler) HandleGetUserTransactionsHistory(ctx *gin.Context) {
 		Success: true,
 		Message: "success",
 		Data:    history,
+	})
+}
+
+func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	transId, _ := strconv.Atoi(ctx.Param("id"))
+
+	if err := uh.ur.SoftDeleteTransaction(ctx.Request.Context(), uid, transId); err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to delete history", err)
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[string]{
+		Success: true,
+		Message: "success",
+		Data:    "history deleted",
 	})
 }

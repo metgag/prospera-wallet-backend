@@ -88,3 +88,23 @@ func (ur *UserRepository) GetUserHistoryTransactions(rctx context.Context, uid, 
 		ID: uid, Transactions: transactions,
 	}, nil
 }
+
+func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, transactionId int) error {
+	sql := `
+		UPDATE transactions
+		SET deleted_at = current_date
+		WHERE id_sender = $1
+		AND id = $2
+	`
+
+	ctag, err := ur.db.Exec(rctx, sql, uid, transactionId)
+	if err != nil {
+		return err
+	}
+
+	if ctag.RowsAffected() == 0 {
+		return errors.New("no matching transaction id")
+	}
+
+	return nil
+}
