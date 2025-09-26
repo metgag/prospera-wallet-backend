@@ -3,6 +3,8 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prospera/internals/models"
@@ -16,7 +18,60 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (ur *UserRepository) GetUser(rctx context.Context, uid int) ([]models.User, error) {
+func (ur *UserRepository) GetProfile(ctx context.Context, uid int) (*models.Profile, error) {
+	sql := `
+		SELECT fullname, phone, img, verified
+		FROM profiles
+		WHERE id = $1
+	`
+
+	row := ur.db.QueryRow(ctx, sql, uid)
+
+	var profile models.Profile
+	err := row.Scan(
+		&profile.FullName,
+		&profile.PhoneNumber,
+		&profile.Avatar,
+		&profile.Verified,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profile, nil
+}
+
+func (ur *UserRepository) UpdateProfile(ctx context.Context, uid int, updates map[string]any) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	setClauses := []string{}
+	args := []any{}
+	i := 1
+
+	for col, val := range updates {
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, i))
+		args = append(args, val)
+		i++
+	}
+
+	// tambah updated_at
+	setClauses = append(setClauses, "updated_at = NOW()")
+
+	query := fmt.Sprintf(`
+		UPDATE profiles
+		SET %s
+		WHERE id = $%d
+	`, strings.Join(setClauses, ", "), i)
+
+	args = append(args, uid)
+
+	_, err := ur.db.Exec(ctx, query, args...)
+	return err
+}
+
+func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.User, error) {
 	sql := `
 		SELECT fullname, phone, img
 		FROM profiles

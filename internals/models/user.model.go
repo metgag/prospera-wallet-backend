@@ -2,6 +2,13 @@ package models
 
 import "time"
 
+type Profile struct {
+	FullName    *string `json:"full_name"`
+	PhoneNumber *string `json:"phone_number"`
+	Avatar      *string `json:"avatar"`
+	Verified    bool    `json:"verified"`
+}
+
 type User struct {
 	FullName    *string `json:"full_name"`
 	PhoneNumber *string `json:"phone_number"`

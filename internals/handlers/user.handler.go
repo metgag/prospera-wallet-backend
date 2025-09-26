@@ -24,14 +24,78 @@ func NewUserHandler(ur *repositories.UserRepository, rdb *redis.Client) *UserHan
 	return &UserHandler{ur: ur, rdb: rdb}
 }
 
-func (uh *UserHandler) HandlerGetAllUsers(ctx *gin.Context) {
+func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
 		return
 	}
 
-	users, err := uh.ur.GetUser(ctx.Request.Context(), uid)
+	profile, err := uh.ur.GetProfile(ctx.Request.Context(), uid)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get profile user", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[models.Profile]{
+		Success: true,
+		Message: "Success Get Profile User",
+		Data:    *profile,
+	})
+}
+
+func (uh *UserHandler) UpdateProfile(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid token", err)
+		return
+	}
+
+	updates := make(map[string]interface{})
+
+	// ambil field dari form-data (jika ada)
+	if fullname := ctx.PostForm("fullname"); fullname != "" {
+		updates["fullname"] = fullname
+	}
+	if phone := ctx.PostForm("phone"); phone != "" {
+		updates["phone"] = phone
+	}
+
+	// upload image jika ada
+	file, err := ctx.FormFile("img")
+	if err == nil {
+		destDir := "public/profile"
+		filename := fmt.Sprintf("profile_%d", uid)
+
+		path, saveErr := utils.SaveUploadedFile(ctx, file, destDir, filename)
+		if saveErr != nil {
+			utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "Upload Failed", saveErr)
+			return
+		}
+
+		updates["img"] = path
+	}
+
+	// update ke DB
+	if err := uh.ur.UpdateProfile(ctx.Request.Context(), uid, updates); err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to update profile", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[any]{
+		Success: true,
+		Message: "Profile updated successfully",
+	})
+}
+
+func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	users, err := uh.ur.GetAllUser(ctx.Request.Context(), uid)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable get users", err)
 		return
