@@ -216,10 +216,18 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 // DELETE HISTORY TRANSACTIONS
 func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, transactionId int) error {
 	sql := `
-		UPDATE transactions
-		SET deleted_sender = current_date
-		WHERE id_sender = $1
-		AND id = $2
+		UPDATE transactions SET 
+		deleted_sender =
+		CASE
+		WHEN id_sender = $1 THEN CURRENT_DATE
+		ELSE deleted_sender
+		END, 
+		deleted_receiver =
+		CASE
+		WHEN id_receiver = $1 THEN CURRENT_DATE
+		ELSE deleted_receiver
+		END
+		WHERE id = $2
 	`
 
 	ctag, err := ur.db.Exec(rctx, sql, uid, transactionId)
