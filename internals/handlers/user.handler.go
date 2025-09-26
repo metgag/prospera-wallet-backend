@@ -6,12 +6,13 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prospera/internals/models"
 	"github.com/prospera/internals/pkg"
 	"github.com/prospera/internals/repositories"
 	"github.com/prospera/internals/utils"
-	"github.com/redis/go-redis/v
+	"github.com/redis/go-redis/v9"
 )
 
 type UserHandler struct {
