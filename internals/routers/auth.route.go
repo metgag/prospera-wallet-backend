@@ -18,11 +18,14 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	// Login
 	auth.POST("", handler.Login)
 
-	//Register
+	// Register
 	auth.POST("/register", handler.Register)
 
-	//Update PIN
+	// Update PIN
 	auth.POST("/pin", middlewares.Authentication, handler.UpdatePIN)
+
+	// Verify PIN
+	auth.GET("/pin", middlewares.Authentication, handler.VerifyPIN)
 
 	// Logout
 	auth.DELETE("/logout", middlewares.Authentication, handler.Logout)

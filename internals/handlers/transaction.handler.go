@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prospera/internals/models"
+	"github.com/prospera/internals/pkg"
 	"github.com/prospera/internals/repositories"
 	"github.com/prospera/internals/utils"
 	"github.com/redis/go-redis/v9"
@@ -22,30 +25,40 @@ func NewTransactionHandler(repo *repositories.TransactionRepository, rdb *redis.
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
-		utils.HandleError(ctx, 401, "Unauthorized", "invalid token", err)
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid token", err)
 		return
 	}
 
 	var req models.TransactionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.HandleError(ctx, 400, "Bad Request", "invalid payload", err)
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "invalid payload", err)
 		return
 	}
 
-	// Verifikasi PIN sebelum membuat transaksi
-	verify, err := h.repoAuth.VerifyUserPIN(ctx.Request.Context(), uid, req.PIN)
-	if err != nil || !verify {
-		utils.HandleError(ctx, 403, "Forbidden", "invalid PIN", err)
+	// Ambil PIN user dari DB
+	storedPIN, err := h.repoAuth.VerifyUserPIN(ctx.Request.Context(), uid)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to fetch user pin", err)
 		return
 	}
 
+	// Bandingkan PIN yang dikirim dengan hash
+	hashConfig := pkg.NewHashConfig()
+	hashConfig.UseRecommended()
+	valid, err := hashConfig.ComparePasswordAndHash(req.PIN, storedPIN)
+	if err != nil || !valid {
+		utils.HandleError(ctx, http.StatusForbidden, "Forbidden", "invalid PIN", err)
+		return
+	}
+
+	// Buat transaksi
 	if err := h.repo.CreateTransaction(ctx.Request.Context(), &req, uid); err != nil {
-		utils.HandleError(ctx, 500, "Internal Server Error", "failed to create transaction", err)
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to create transaction", err)
 		return
 	}
 
-	ctx.JSON(200, models.Response[any]{
+	ctx.JSON(http.StatusOK, models.Response[any]{
 		Success: true,
-		Message: "Transaction Successs",
+		Message: "Transaction Success",
 	})
 }

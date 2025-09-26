@@ -126,6 +126,43 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) VerifyPIN(c *gin.Context) {
+	var req models.PINRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Ambil ID dari token
+	id, err := utils.GetUserIDFromJWT(c)
+	if err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	// Ambil pin yang tersimpan dari repo
+	storedPIN, err := h.Repo.VerifyUserPIN(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch account"})
+		return
+	}
+
+	// Compare di handler
+	hashConfig := pkg.NewHashConfig()
+	hashConfig.UseRecommended()
+	valid, err := hashConfig.ComparePasswordAndHash(req.PIN, storedPIN)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compare pin"})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.Response[bool]{
+		Success: true,
+		Message: "Success Verify PIN",
+		Data:    valid,
+	})
+}
+
 func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
 	var req models.PINRequest
 
