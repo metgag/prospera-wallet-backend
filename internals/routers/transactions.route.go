@@ -11,7 +11,8 @@ import (
 
 func InitTransactions(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	repo := repositories.NewTransactionRepository(db)
-	handler := handlers.NewTransactionHandler(repo, rdb)
+	repoAuth := repositories.NewAuthRepo(db, rdb)
+	handler := handlers.NewTransactionHandler(repo, rdb, repoAuth)
 
 	transaction := router.Group("/transaction")
 	transaction.Use(middlewares.Authentication)

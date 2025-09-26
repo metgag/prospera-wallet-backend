@@ -9,12 +9,13 @@ import (
 )
 
 type TransactionHandler struct {
-	repo *repositories.TransactionRepository
-	rdb  *redis.Client
+	repo     *repositories.TransactionRepository
+	repoAuth *repositories.Auth
+	rdb      *redis.Client
 }
 
-func NewTransactionHandler(repo *repositories.TransactionRepository, rdb *redis.Client) *TransactionHandler {
-	return &TransactionHandler{repo: repo, rdb: rdb}
+func NewTransactionHandler(repo *repositories.TransactionRepository, rdb *redis.Client, repoAuth *repositories.Auth) *TransactionHandler {
+	return &TransactionHandler{repo: repo, rdb: rdb, repoAuth: repoAuth}
 }
 
 // Create Transactions
@@ -32,7 +33,7 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	}
 
 	// Verifikasi PIN sebelum membuat transaksi
-	verify, err := utils.VerifyUserPIN(ctx.Request.Context(), h.repo.DB, uid, req.PIN)
+	verify, err := h.repoAuth.VerifyUserPIN(ctx.Request.Context(), uid, req.PIN)
 	if err != nil || !verify {
 		utils.HandleError(ctx, 403, "Forbidden", "invalid PIN", err)
 		return

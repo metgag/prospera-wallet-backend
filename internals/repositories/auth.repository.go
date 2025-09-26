@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prospera/internals/models"
+	"github.com/prospera/internals/pkg"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -122,4 +123,18 @@ func (ur *Auth) UpdatePIN(rctx context.Context, newPin string, uid int) error {
 	}
 
 	return nil
+}
+
+func (ur *Auth) VerifyUserPIN(ctx context.Context, userID int, pin string) (bool, error) {
+	var storedPIN string
+	err := ur.db.QueryRow(ctx, "SELECT pin FROM accounts WHERE id=$1", userID).Scan(&storedPIN)
+	if err != nil {
+		return false, err
+	}
+	hashconfig := pkg.NewHashConfig()
+	verify, err := hashconfig.ComparePasswordAndHash(pin, storedPIN)
+	if err != nil {
+		return false, err
+	}
+	return verify, nil
 }
