@@ -28,5 +28,5 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	auth.POST("/verify", middlewares.Authentication, handler.VerifyPIN)
 
 	// Logout
-	auth.DELETE("/logout", middlewares.Authentication, handler.Logout)
+	auth.DELETE("", middlewares.Authentication, handler.Logout)
 }

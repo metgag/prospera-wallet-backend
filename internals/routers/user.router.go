@@ -17,14 +17,24 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 
 	userGroup.Use(middlewares.Authentication)
 
+	// GET PROFILE
 	userGroup.GET("", uh.GetProfile)
+
+	// PATCH PROFILE
 	userGroup.PATCH("", uh.UpdateProfile)
 
+	// GET ALL PROFILE
 	userGroup.GET("/all", uh.GetAllUsers)
+
+	// GET ALL HISTORY
 	userGroup.GET("/:page", uh.GetUserHistoryTransactions)
-	userGroup.DELETE("/history:id", uh.HandleSoftDeleteTransaction) // Soft Delete
 
-	userGroup.PATCH("/password", uh.ChangePassword) // Changer Password
+	// DELETE HISTORY
+	userGroup.DELETE("/history/:id", uh.HandleSoftDeleteTransaction)
 
+	// PATCH CHANGE PASSWORD
+	userGroup.PATCH("/password", uh.ChangePassword)
+
+	// GET SUMMARY
 	userGroup.GET("/summary", uh.GetSummary)
 }
