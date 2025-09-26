@@ -13,13 +13,16 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	ur := repositories.NewUserRepository(db)
 	uh := handlers.NewUserHandler(ur, rdb)
 
-	userGroup := router.Group("/users")
+	userGroup := router.Group("/user")
+
+	userGroup.Use(middlewares.Authentication)
 
 	userGroup.GET("", uh.GetProfile)
 	userGroup.PATCH("", uh.UpdateProfile)
 
 	userGroup.GET("/all", uh.GetAllUsers)
-	userGroup.GET("/transactions", uh.GetUserHistoryTransactions)
-	userGroup.DELETE("transactions/:id", uh.HandleSoftDeleteTransaction)        // Soft Delete
-	userGroup.PATCH("/password", middlewares.Authentication, uh.ChangePassword) // Changer Password
+	userGroup.GET("/history", uh.GetUserHistoryTransactions)
+	userGroup.DELETE("/history:id", uh.HandleSoftDeleteTransaction) // Soft Delete
+
+	userGroup.PATCH("/password", uh.ChangePassword) // Changer Password
 }

@@ -24,10 +24,22 @@ func NewUserHandler(ur *repositories.UserRepository, rdb *redis.Client) *UserHan
 	return &UserHandler{ur: ur, rdb: rdb}
 }
 
+// GET PROFILE
 func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	var cachedData models.Profile
+	var redisKey = fmt.Sprintf("Prospera-Profile-%d", uid)
+	if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
+		ctx.JSON(http.StatusOK, models.Response[models.Profile]{
+			Success: true,
+			Message: "Success Get Profile User (from cache)",
+			Data:    cachedData,
+		})
 		return
 	}
 
@@ -37,6 +49,10 @@ func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 		return
 	}
 
+	if err := utils.RenewCache(ctx.Request.Context(), uh.rdb, redisKey, profile, 10); err != nil {
+		log.Println("Failed to set redis cache:", err)
+	}
+
 	ctx.JSON(http.StatusOK, models.Response[models.Profile]{
 		Success: true,
 		Message: "Success Get Profile User",
@@ -44,6 +60,7 @@ func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 	})
 }
 
+// UPDATE PROFILE
 func (uh *UserHandler) UpdateProfile(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -82,16 +99,33 @@ func (uh *UserHandler) UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
+	var redisKey = fmt.Sprintf("Prospera-Profile-%d", uid)
+	if err := utils.InvalidateCache(ctx, uh.rdb, redisKey); err != nil {
+		log.Println("Failed invalidate cache:", err)
+	}
+
 	ctx.JSON(http.StatusOK, models.Response[any]{
 		Success: true,
 		Message: "Profile updated successfully",
 	})
 }
 
+// GET ALL USERS
 func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	var cachedData []models.User
+	var redisKey = fmt.Sprintf("Prospera-AllUser-%d", uid)
+	if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
+		ctx.JSON(http.StatusOK, models.Response[[]models.User]{
+			Success: true,
+			Message: "Success Get History (from cache)",
+			Data:    cachedData,
+		})
 		return
 	}
 
@@ -101,6 +135,10 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 		return
 	}
 
+	if err := utils.RenewCache(ctx.Request.Context(), uh.rdb, redisKey, users, 10); err != nil {
+		log.Println("Failed to set redis cache:", err)
+	}
+
 	ctx.JSON(http.StatusOK, models.Response[[]models.User]{
 		Success: true,
 		Message: "User's list",
@@ -108,6 +146,7 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 	})
 }
 
+// GET HISTORY TRANSACTIONS
 func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 	// Ambil user_id dari Token
 	userID, err := utils.GetUserIDFromJWT(c)
@@ -145,6 +184,7 @@ func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 	})
 }
 
+// DELETE HISTORY TRANSACTIONS
 func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -174,7 +214,7 @@ func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 	})
 }
 
-// Digunakan di halaman Change Password
+// PATCH CHANGE PASSWORD
 func (uh *UserHandler) ChangePassword(ctx *gin.Context) {
 	var req models.ChangePassword
 

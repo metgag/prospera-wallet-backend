@@ -18,6 +18,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+// GET PROFILE
 func (ur *UserRepository) GetProfile(ctx context.Context, uid int) (*models.Profile, error) {
 	sql := `
 		SELECT fullname, phone, img, verified
@@ -41,6 +42,7 @@ func (ur *UserRepository) GetProfile(ctx context.Context, uid int) (*models.Prof
 	return &profile, nil
 }
 
+// UPDATE PROFILE
 func (ur *UserRepository) UpdateProfile(ctx context.Context, uid int, updates map[string]any) error {
 	if len(updates) == 0 {
 		return nil
@@ -54,6 +56,25 @@ func (ur *UserRepository) UpdateProfile(ctx context.Context, uid int, updates ma
 		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, i))
 		args = append(args, val)
 		i++
+	}
+
+	// cek apakah ada fullname, phone, img yang diupdate
+	needVerify := false
+	if _, ok := updates["fullname"]; ok {
+		needVerify = true
+	}
+	if _, ok := updates["phone"]; ok {
+		needVerify = true
+	}
+	if _, ok := updates["img"]; ok {
+		needVerify = true
+	}
+
+	// kalau fullname, phone, img semuanya sudah terisi → verified = true
+	if needVerify {
+		setClauses = append(setClauses,
+			"verified = (CASE WHEN fullname IS NOT NULL AND fullname <> '' AND phone IS NOT NULL AND phone <> '' AND img IS NOT NULL AND img <> '' THEN TRUE ELSE verified END)",
+		)
 	}
 
 	// tambah updated_at
@@ -71,6 +92,7 @@ func (ur *UserRepository) UpdateProfile(ctx context.Context, uid int, updates ma
 	return err
 }
 
+// GET ALL USERS
 func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.User, error) {
 	sql := `
 		SELECT fullname, phone, img
@@ -101,6 +123,7 @@ func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.Us
 	return users, nil
 }
 
+// GET HISTORY TRANSACTIONS
 func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID int) ([]models.TransactionHistory, error) {
 	query := `
 	WITH user_participant AS (
@@ -190,6 +213,7 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 	return transactions, nil
 }
 
+// DELETE HISTORY TRANSACTIONS
 func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, transactionId int) error {
 	sql := `
 		UPDATE transactions SET 
@@ -218,7 +242,7 @@ func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, trans
 	return nil
 }
 
-// Untuk mengganti password
+// PATCH CHANGE PASSWORD
 func (ur *UserRepository) GetPasswordFromID(ctx context.Context, id int) (string, error) {
 	query := `
 		SELECT
