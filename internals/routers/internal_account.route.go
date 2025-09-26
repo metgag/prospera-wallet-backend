@@ -10,12 +10,12 @@ import (
 )
 
 func InitInternalAccountRoute(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
-	repo := repositories.NewTransactionRepository(db)
-	repoAuth := repositories.NewAuthRepo(db, rdb)
-	handler := handlers.NewTransactionHandler(repo, rdb, repoAuth)
+	repo := repositories.NewInternalAccountRepository(db)
+	handler := handlers.NewInternalAccountHandler(repo, rdb)
 
-	transaction := router.Group("/transaction")
-	transaction.Use(middlewares.Authentication)
+	internal := router.Group("/internal")
 
-	transaction.POST("", handler.CreateTransaction)
+	internal.Use(middlewares.Authentication)
+
+	internal.GET("", handler.GetAll)
 }

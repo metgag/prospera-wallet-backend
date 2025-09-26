@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -155,32 +156,30 @@ func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 		return
 	}
 
-	var cachedData []models.TransactionHistory
-	var redisKey = fmt.Sprintf("Prospera-HistoryTransactions_%d", userID)
-	if err := utils.CacheHit(c.Request.Context(), h.rdb, redisKey, &cachedData); err == nil {
-		c.JSON(http.StatusOK, models.Response[[]models.TransactionHistory]{
-			Success: true,
-			Message: "Success Get History (from cache)",
-			Data:    cachedData,
-		})
-		return
+	// Ambil query param page, default = 1
+	pageStr := c.DefaultQuery("page", "1")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
 	}
+	limit := 7
+	offset := (page - 1) * limit
 
-	transactions, err := h.ur.GetUserHistoryTransactions(c.Request.Context(), userID)
+	// Ambil data transaksi + total count
+	transactions, total, err := h.ur.GetUserHistoryTransactions(c.Request.Context(), userID, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "failed get history transaction", err)
 		return
 	}
 
-	if err := utils.RenewCache(c.Request.Context(), h.rdb, redisKey, transactions, 10); err != nil {
-		log.Println("Failed to set redis cache:", err)
-	}
+	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
-	c.JSON(http.StatusOK, models.Response[[]models.TransactionHistory]{
-		Success: true,
-		Message: "Success Get History",
-		Data:    transactions,
+	c.JSON(http.StatusOK, models.PaginatedResponse[[]models.TransactionHistory]{
+		Success:    true,
+		Message:    "Success Load History",
+		Data:       transactions,
+		TotalPages: totalPages,
+		Page:       page,
 	})
 }
 
@@ -214,7 +213,7 @@ func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 	})
 }
 
-// Digunakan di halaman Change Password
+// POST CHANGE PASSWORD
 func (uh *UserHandler) ChangePassword(ctx *gin.Context) {
 	var req models.ChangePassword
 
@@ -267,4 +266,46 @@ func (uh *UserHandler) ChangePassword(ctx *gin.Context) {
 		Success: true,
 		Message: "Change password successful",
 	})
+}
+
+// GET SUMMARY
+func (h *UserHandler) GetSummary(c *gin.Context) {
+	// Ambil user ID
+	userID, err := utils.GetUserIDFromJWT(c)
+	if err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	// Ambil query parameter "range", default daily
+	rangeType := c.DefaultQuery("range", "daily")
+
+	switch rangeType {
+	case "daily":
+		summaries, err := h.ur.GetDailySummary(c, userID)
+		if err != nil {
+			utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "Failed Get Summary Daily", err)
+			return
+		}
+		c.JSON(http.StatusOK, models.Response[any]{
+			Success: true,
+			Message: "Success Get Summary Daily",
+			Data:    summaries,
+		})
+
+	case "weekly":
+		summaries, err := h.ur.GetWeeklySummary(c, userID)
+		if err != nil {
+			utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "Failed Get Summary Weekly", err)
+			return
+		}
+		c.JSON(http.StatusOK, models.Response[any]{
+			Success: true,
+			Message: "Success Get Summary Daily",
+			Data:    summaries,
+		})
+
+	default:
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "invalid range type, must be 'daily' or 'weekly", err)
+	}
 }

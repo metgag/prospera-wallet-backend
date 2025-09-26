@@ -21,8 +21,10 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userGroup.PATCH("", uh.UpdateProfile)
 
 	userGroup.GET("/all", uh.GetAllUsers)
-	userGroup.GET("/history", uh.GetUserHistoryTransactions)
+	userGroup.GET("/:page", uh.GetUserHistoryTransactions)
 	userGroup.DELETE("/history:id", uh.HandleSoftDeleteTransaction) // Soft Delete
 
 	userGroup.PATCH("/password", uh.ChangePassword) // Changer Password
+
+	userGroup.GET("/summary", uh.GetSummary)
 }
