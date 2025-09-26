@@ -43,10 +43,9 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[string]{
+	ctx.JSON(http.StatusCreated, models.Response[any]{
 		Success: true,
 		Message: "Register account successful",
-		Data:    "",
 	})
 }
 
@@ -121,9 +120,8 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[string]{
+	ctx.JSON(http.StatusOK, models.Response[any]{
 		Success: true,
 		Message: "Successfully logged out",
-		Data:    "",
 	})
 }
