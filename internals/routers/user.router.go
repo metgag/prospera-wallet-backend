@@ -16,6 +16,7 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userGroup := router.Group("/users")
 
 	userGroup.GET("", uh.GetProfile)
+	userGroup.PATCH("", uh.UpdateProfile)
 
 	userGroup.GET("/all", uh.GetAllUsers)
 	userGroup.GET("/transactions", uh.GetUserHistoryTransactions)
