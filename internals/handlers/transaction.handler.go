@@ -45,9 +45,14 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	// Bandingkan PIN yang dikirim dengan hash
 	hashConfig := pkg.NewHashConfig()
 	hashConfig.UseRecommended()
+
 	valid, err := hashConfig.ComparePasswordAndHash(req.PIN, storedPIN)
-	if err != nil || !valid {
-		utils.HandleError(ctx, http.StatusForbidden, "Forbidden", "invalid PIN", err)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to verify pin", err)
+		return
+	}
+	if !valid {
+		utils.HandleError(ctx, http.StatusForbidden, "Forbidden", "invalid PIN", nil)
 		return
 	}
 

@@ -27,7 +27,7 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	userGroup.GET("/all", uh.GetAllUsers)
 
 	// GET ALL HISTORY
-	userGroup.GET("/:page", uh.GetUserHistoryTransactions)
+	userGroup.GET("/history", uh.GetUserHistoryTransactions)
 
 	// DELETE HISTORY
 	userGroup.DELETE("/history/:id", uh.HandleSoftDeleteTransaction)

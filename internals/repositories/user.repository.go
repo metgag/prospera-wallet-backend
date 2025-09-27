@@ -145,7 +145,7 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 		return nil, 0, err
 	}
 
-	// Query utama + limit offset
+	// Query utama + pagination
 	query := `
 	WITH user_participant AS (
 		SELECT p.id AS participant_id
@@ -162,47 +162,35 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 			WHEN t.id_sender = up.participant_id THEN 'debit'
 			WHEN t.id_receiver = up.participant_id THEN 'credit'
 		END AS direction,
+		cp.type AS counterparty_type,
 		CASE 
-			WHEN t.id_sender = up.participant_id THEN pr.type
-			ELSE ps.type
-		END AS counterparty_type,
-		COALESCE(
-			(CASE 
-				WHEN t.id_sender = up.participant_id AND pr.type = 'wallet' THEN prf.fullname
-				WHEN t.id_receiver = up.participant_id AND ps.type = 'wallet' THEN prf.fullname
-			END),
-			(CASE 
-				WHEN t.id_sender = up.participant_id AND pr.type = 'internal' THEN ia.name
-				WHEN t.id_receiver = up.participant_id AND ps.type = 'internal' THEN ia.name
-			END)
-		) AS counterparty_name,
-		COALESCE(
-			(CASE 
-				WHEN t.id_sender = up.participant_id AND pr.type = 'wallet' THEN prf.img
-				WHEN t.id_receiver = up.participant_id AND ps.type = 'wallet' THEN prf.img
-			END),
-			(CASE 
-				WHEN t.id_sender = up.participant_id AND pr.type = 'internal' THEN ia.img
-				WHEN t.id_receiver = up.participant_id AND ps.type = 'internal' THEN ia.img
-			END)
-		) AS counterparty_img,
+			WHEN cp.type = 'wallet' THEN prf.fullname
+			WHEN cp.type = 'internal' THEN ia.name
+			ELSE NULL
+		END AS counterparty_name,
 		CASE 
-			WHEN (t.id_sender = up.participant_id AND pr.type = 'wallet') THEN prf.phone
-			WHEN (t.id_receiver = up.participant_id AND ps.type = 'wallet') THEN prf.phone
+			WHEN cp.type = 'wallet' THEN prf.img
+			WHEN cp.type = 'internal' THEN ia.img
+			ELSE NULL
+		END AS counterparty_img,
+		CASE 
+			WHEN cp.type = 'wallet' THEN prf.phone
 			ELSE NULL
 		END AS counterparty_phone,
 		t.created_at
 	FROM transactions t
 	JOIN user_participant up 
 		ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
-	JOIN participants ps ON ps.id = t.id_sender
-	JOIN participants pr ON pr.id = t.id_receiver
-	LEFT JOIN wallets w 
-		ON ( (ps.type = 'wallet' AND ps.ref_id = w.id) OR (pr.type = 'wallet' AND pr.ref_id = w.id) )
+	-- tentukan lawannya (counterparty) hanya sekali
+	JOIN participants cp 
+		ON cp.id = CASE 
+			WHEN t.id_sender = up.participant_id THEN t.id_receiver
+			ELSE t.id_sender
+		END
+	LEFT JOIN wallets w ON w.id = cp.ref_id AND cp.type = 'wallet'
 	LEFT JOIN profiles prf ON prf.id = w.id
-	LEFT JOIN internal_accounts ia 
-		ON ( (ps.type = 'internal' AND ps.ref_id = ia.id) OR (pr.type = 'internal' AND pr.ref_id = ia.id) )
-	ORDER BY DATE(t.created_at) DESC, t.created_at DESC
+	LEFT JOIN internal_accounts ia ON ia.id = cp.ref_id AND cp.type = 'internal'
+	ORDER BY t.created_at DESC
 	LIMIT $2 OFFSET $3;
 	`
 

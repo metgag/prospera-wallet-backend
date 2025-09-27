@@ -32,12 +32,18 @@ func (r *TransactionRepository) getOrCreateParticipant(ctx context.Context, tx p
 	return id, nil
 }
 
-func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *models.TransactionRequest, userID int) error {
+func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *models.TransactionRequest, userID int) (err error) {
 	tx, err := r.DB.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+
+	// Pastikan rollback hanya dijalankan kalau error
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+		}
+	}()
 
 	var senderID, receiverID int
 
@@ -46,6 +52,10 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 		if txReq.InternalAccountID == nil {
 			return errors.New("internal account id required for top_up")
 		}
+		if txReq.Amount <= 0 {
+			return errors.New("amount must be greater than zero")
+		}
+
 		senderID, err = r.getOrCreateParticipant(ctx, tx, "internal", *txReq.InternalAccountID)
 		if err != nil {
 			return err
@@ -56,12 +66,16 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 		}
 
 	case "transfer":
+		if txReq.ReceiverAccountID == nil {
+			return errors.New("receiver account id required for transfer")
+		}
+		if txReq.Amount <= 0 {
+			return errors.New("amount must be greater than zero")
+		}
+
 		senderID, err = r.getOrCreateParticipant(ctx, tx, "wallet", userID)
 		if err != nil {
 			return err
-		}
-		if txReq.ReceiverAccountID == nil {
-			return errors.New("receiver account id required for transfer")
 		}
 		receiverID, err = r.getOrCreateParticipant(ctx, tx, "wallet", *txReq.ReceiverAccountID)
 		if err != nil {
