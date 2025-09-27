@@ -40,4 +40,7 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 
 	// GET SUMMARY
 	userGroup.GET("/summary", uh.GetSummary)
+
+	// REMOVE AVATAR
+	userGroup.DELETE("/avatar", uh.RemoveAvatar)
 }

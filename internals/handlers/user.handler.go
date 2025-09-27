@@ -330,3 +330,22 @@ func (h *UserHandler) GetBalance(ctx *gin.Context) {
 		Data:    balance,
 	})
 }
+
+func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid token", err)
+		return
+	}
+
+	if err := h.ur.DeleteAvatar(ctx.Request.Context(), uid); err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "Unable to remove user's avatar", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[string]{
+		Success: true,
+		Message: "User's avatar removed",
+		Data:    "success",
+	})
+}
