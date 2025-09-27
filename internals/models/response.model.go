@@ -11,6 +11,7 @@ type ResponseLogin struct {
 	Message    string `json:"message" example:"Request processed successfully"`
 	Token      string `json:"token"`
 	IsPinExist bool   `json:"isPinExist" example:"false"`
+	Email      string `json:"email"`
 }
 
 type PaginatedResponse[T any] struct {
