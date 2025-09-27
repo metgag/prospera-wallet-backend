@@ -402,3 +402,20 @@ func (r *UserRepository) GetBalanceByWalletID(ctx context.Context, walletID int)
 
 	return balance, nil
 }
+
+func (r *UserRepository) DeleteAvatar(ctx context.Context, uid int) error {
+	sql := `
+		UPDATE profiles
+		SET img = NULL
+		WHERE id = $1
+	`
+	ctag, err := r.db.Exec(ctx, sql, uid)
+	if err != nil {
+		return err
+	}
+	if ctag.RowsAffected() == 0 {
+		return errors.New("unable to remove avatar")
+	}
+
+	return nil
+}
