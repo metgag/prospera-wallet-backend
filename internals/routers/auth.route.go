@@ -31,5 +31,6 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	auth.DELETE("", middlewares.Authentication, handler.Logout)
 
 	// Check email
+	// How to use? localhost:8080/auth/check?email=user12@mail.com
 	auth.GET("/check", handler.CheckEmail)
 }
