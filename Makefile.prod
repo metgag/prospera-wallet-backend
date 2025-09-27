@@ -1,6 +1,5 @@
-# include ./.env
 include ./prod.env
-DBURL=postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+DBURL=postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT_MAKE)/$(DB_NAME)?sslmode=disable
 MIGRATIONPATH=db/migrations
 SEEDSPATH=db/seeds
 
