@@ -129,7 +129,7 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 	var req models.PINRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		utils.HandleError(c, http.StatusBadRequest, "Bad Request", "invalid request", err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 	// Ambil pin yang tersimpan dari repo
 	storedPIN, err := h.Repo.VerifyUserPIN(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch account"})
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "failed to fetch account", err)
 		return
 	}
 
@@ -152,7 +152,7 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 	hashConfig.UseRecommended()
 	valid, err := hashConfig.ComparePasswordAndHash(req.PIN, storedPIN)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compare pin"})
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "failed to compare pin", err)
 		return
 	}
 

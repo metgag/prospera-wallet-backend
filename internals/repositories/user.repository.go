@@ -137,7 +137,8 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 		SELECT COUNT(*)
 		FROM transactions t
 		JOIN user_participant up 
-			ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
+			ON (t.id_sender = up.participant_id AND t.deleted_sender IS NULL)
+			OR (t.id_receiver = up.participant_id AND t.deleted_receiver IS NULL)
 	`
 	var total int
 	err := ur.db.QueryRow(ctx, countQuery, userID).Scan(&total)
@@ -180,7 +181,8 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 		t.created_at
 	FROM transactions t
 	JOIN user_participant up 
-		ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
+		ON (t.id_sender = up.participant_id AND t.deleted_sender IS NULL)
+		OR (t.id_receiver = up.participant_id AND t.deleted_receiver IS NULL)
 	-- tentukan lawannya (counterparty) hanya sekali
 	JOIN participants cp 
 		ON cp.id = CASE 
@@ -226,18 +228,18 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 // DELETE HISTORY TRANSACTIONS
 func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, transactionId int) error {
 	sql := `
-		UPDATE transactions SET 
-		deleted_sender =
-		CASE
-		WHEN id_sender = $1 THEN CURRENT_DATE
-		ELSE deleted_sender
-		END, 
-		deleted_receiver =
-		CASE
-		WHEN id_receiver = $1 THEN CURRENT_DATE
-		ELSE deleted_receiver
-		END
+		UPDATE transactions
+		SET 
+			deleted_sender = CASE
+				WHEN id_sender = $1 THEN CURRENT_TIMESTAMP
+				ELSE deleted_sender
+			END,
+			deleted_receiver = CASE
+				WHEN id_receiver = $1 THEN CURRENT_TIMESTAMP
+				ELSE deleted_receiver
+			END
 		WHERE id = $2
+		  AND ($1 = id_sender OR $1 = id_receiver)
 	`
 
 	ctag, err := ur.db.Exec(rctx, sql, uid, transactionId)
@@ -246,7 +248,7 @@ func (ur *UserRepository) SoftDeleteTransaction(rctx context.Context, uid, trans
 	}
 
 	if ctag.RowsAffected() == 0 {
-		return errors.New("no matching transaction id")
+		return errors.New("no matching transaction found for this user")
 	}
 
 	return nil
@@ -381,4 +383,20 @@ func (r *UserRepository) GetWeeklySummary(ctx context.Context, userID int) ([]mo
 	}
 
 	return summaries, nil
+}
+
+// GET BALANCE
+func (r *UserRepository) GetBalanceByWalletID(ctx context.Context, walletID int) (int, error) {
+	var balance int
+	err := r.db.QueryRow(ctx, `
+		SELECT balance 
+		FROM wallets
+		WHERE id = $1
+	`, walletID).Scan(&balance)
+
+	if err != nil {
+		return 0, errors.New("wallet not found")
+	}
+
+	return balance, nil
 }
