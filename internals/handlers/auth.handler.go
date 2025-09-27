@@ -198,3 +198,25 @@ func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
 		Data:    "",
 	})
 }
+
+func (h *AuthHandler) CheckEmail(ctx *gin.Context) {
+	email := ctx.Query("email")
+	if email == "" {
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "missing email query param", nil)
+		return
+	}
+
+	exists, err := h.Repo.CheckEmail(ctx, email)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to check email", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[map[string]bool]{
+		Success: true,
+		Message: "Email check successful",
+		Data: map[string]bool{
+			"exists": exists,
+		},
+	})
+}
