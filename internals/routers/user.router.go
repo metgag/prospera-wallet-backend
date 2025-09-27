@@ -23,6 +23,9 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	// PATCH PROFILE
 	userGroup.PATCH("", uh.UpdateProfile)
 
+	// GET BALANCE
+	userGroup.GET("/wallet", uh.GetBalance)
+
 	// GET ALL PROFILE
 	userGroup.GET("/all", uh.GetAllUsers)
 
