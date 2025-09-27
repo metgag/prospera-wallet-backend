@@ -12,6 +12,7 @@ func CORSMiddleware() gin.HandlerFunc {
 	whitelist := []string{
 		"http://127.0.0.1:3000",
 		"http://localhost:3000",
+		"http://localhost:5173",
 	}
 
 	return func(c *gin.Context) {
