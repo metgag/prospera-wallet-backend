@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prospera/internals/utils"
 )
 
 // CORSMiddleware handle CORS for frontend development
@@ -28,9 +29,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		}
 
 		if origin != "" && !allowed {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "CORS origin not allowed",
-			})
+			utils.HandleMiddlewareError(c, http.StatusForbidden, "CORS origin not allowed", "CORS origin not allowed")
 			return
 		}
 
