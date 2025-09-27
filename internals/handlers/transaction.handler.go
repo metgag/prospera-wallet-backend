@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -60,6 +61,14 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	if err := h.repo.CreateTransaction(ctx.Request.Context(), &req, uid); err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed to create transaction", err)
 		return
+	}
+
+	if req.Type == "transfer" {
+		message := fmt.Sprintf("Kamu menerima transfer Rp%d.00 dari user %d", req.Amount, uid)
+		pkg.WebSocketHub.SendToUser(*req.ReceiverAccountID, message)
+	} else {
+		message := fmt.Sprintf("Kamu menerima transfer Rp%d.00 dari user %d", req.Amount, uid)
+		pkg.WebSocketHub.SendToUser(uid, message)
 	}
 
 	ctx.JSON(http.StatusOK, models.Response[any]{

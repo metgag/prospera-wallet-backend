@@ -153,3 +153,31 @@ func (ur *Auth) CheckEmail(ctx context.Context, emailInput string) (bool, error)
 
 	return true, nil
 }
+
+func (r *Auth) FindByEmail(email string) (*models.ForgotPasswordScan, error) {
+	var user models.ForgotPasswordScan
+	query := `
+        SELECT id, email, password, created_at, updated_at
+        FROM accounts
+        WHERE email = $1
+        LIMIT 1
+    `
+	err := r.db.QueryRow(context.Background(), query, email).
+		Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+	return &user, nil
+}
+
+func (r *Auth) SaveResetToken(userID int, token string, expiredAt time.Time) error {
+	query := `
+        UPDATE accounts SET
+		token = $2,
+		expired_at = $3
+		WHERE id = $1
+    `
+	_, err := r.db.Exec(context.Background(), query, userID, token, expiredAt)
+	return err
+}
