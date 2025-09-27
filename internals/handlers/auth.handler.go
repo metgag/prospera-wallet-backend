@@ -81,7 +81,7 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	}
 
 	// Generate JWT
-	claims := pkg.NewJWTClaims(userID)
+	claims := pkg.NewJWTClaims(userID, req.Email)
 	token, err := claims.GenToken()
 	if err != nil {
 		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed generate token", err)
@@ -93,6 +93,7 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 		Message:    "Login successful",
 		Token:      token,
 		IsPinExist: isPinExist,
+		Email:      claims.Email,
 	})
 }
 
