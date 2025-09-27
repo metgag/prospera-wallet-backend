@@ -12,6 +12,8 @@ func InitRouter(db *pgxpool.Pool, rdb *redis.Client) *gin.Engine {
 	router.Use(middlewares.CORSMiddleware())
 	middlewares.InitRedis(rdb)
 
+	router.Static("profile", "public/profile")
+
 	// Init Route Authentication
 	InitAuthRoutes(router, db, rdb)
 	InitUserRouter(router, db, rdb)
