@@ -384,3 +384,19 @@ func (r *UserRepository) GetWeeklySummary(ctx context.Context, userID int) ([]mo
 
 	return summaries, nil
 }
+
+// GET BALANCE
+func (r *UserRepository) GetBalanceByWalletID(ctx context.Context, walletID int) (int, error) {
+	var balance int
+	err := r.db.QueryRow(ctx, `
+		SELECT balance 
+		FROM wallets
+		WHERE id = $1
+	`, walletID).Scan(&balance)
+
+	if err != nil {
+		return 0, errors.New("wallet not found")
+	}
+
+	return balance, nil
+}
