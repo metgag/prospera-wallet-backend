@@ -7,6 +7,7 @@ type Profile struct {
 	PhoneNumber *string `json:"phone_number"`
 	Avatar      *string `json:"avatar"`
 	Verified    bool    `json:"verified"`
+	Email       string  `json:"email"`
 }
 
 type User struct {
