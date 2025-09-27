@@ -21,3 +21,7 @@ type BlacklistToken struct {
 	Token     string        `json:"token"`
 	ExpiresIn time.Duration `json:"expires_in"`
 }
+
+type PINRequest struct {
+	PIN string `json:"pin" example:"123456"`
+}

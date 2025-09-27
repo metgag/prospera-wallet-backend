@@ -124,7 +124,28 @@ func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.Us
 }
 
 // GET HISTORY TRANSACTIONS
-func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID int) ([]models.TransactionHistory, error) {
+func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID, limit, offset int) ([]models.TransactionHistory, int, error) {
+	// Hitung total data untuk pagination
+	countQuery := `
+		WITH user_participant AS (
+			SELECT p.id AS participant_id
+			FROM accounts a
+			JOIN wallets w ON w.id = a.id
+			JOIN participants p ON p.ref_id = w.id AND p.type = 'wallet'
+			WHERE a.id = $1
+		)
+		SELECT COUNT(*)
+		FROM transactions t
+		JOIN user_participant up 
+			ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
+	`
+	var total int
+	err := ur.db.QueryRow(ctx, countQuery, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Query utama + limit offset
 	query := `
 	WITH user_participant AS (
 		SELECT p.id AS participant_id
@@ -181,12 +202,13 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 	LEFT JOIN profiles prf ON prf.id = w.id
 	LEFT JOIN internal_accounts ia 
 		ON ( (ps.type = 'internal' AND ps.ref_id = ia.id) OR (pr.type = 'internal' AND pr.ref_id = ia.id) )
-	ORDER BY DATE(t.created_at) DESC, t.created_at DESC;
+	ORDER BY DATE(t.created_at) DESC, t.created_at DESC
+	LIMIT $2 OFFSET $3;
 	`
 
-	rows, err := ur.db.Query(ctx, query, userID)
+	rows, err := ur.db.Query(ctx, query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -205,12 +227,12 @@ func (ur *UserRepository) GetUserHistoryTransactions(ctx context.Context, userID
 			&tx.CreatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		transactions = append(transactions, tx)
 	}
 
-	return transactions, nil
+	return transactions, total, nil
 }
 
 // DELETE HISTORY TRANSACTIONS
@@ -273,4 +295,102 @@ func (ur *UserRepository) ChangePassword(ctx context.Context, userID int, hashed
 		return err
 	}
 	return nil
+}
+
+// POST SUMMARY MONTH AND WEEK
+func (r *UserRepository) GetDailySummary(ctx context.Context, userID int) ([]models.DailySummary, error) {
+	query := `
+	WITH user_participant AS (
+		SELECT p.id AS participant_id
+		FROM accounts a
+		JOIN wallets w ON w.id = a.id
+		JOIN participants p ON p.ref_id = w.id AND p.type = 'wallet'
+		WHERE a.id = $1
+	),
+	daily_summary AS (
+		SELECT
+			DATE(t.created_at) AS date,
+			SUM(CASE WHEN t.id_sender = up.participant_id THEN t.total ELSE 0 END) AS total_expense,
+			SUM(CASE WHEN t.id_receiver = up.participant_id THEN t.total ELSE 0 END) AS total_income
+		FROM transactions t
+		JOIN user_participant up 
+			ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
+		WHERE t.created_at >= CURRENT_DATE - interval '6 days'
+		GROUP BY DATE(t.created_at)
+	)
+	SELECT 
+		d::date AS date,
+		COALESCE(ds.total_expense, 0) AS total_expense,
+		COALESCE(ds.total_income, 0) AS total_income
+	FROM generate_series(
+		CURRENT_DATE - interval '6 days',
+		CURRENT_DATE,
+		interval '1 day'
+	) d
+	LEFT JOIN daily_summary ds ON ds.date = d::date
+	ORDER BY d;`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var summaries []models.DailySummary
+	for rows.Next() {
+		var s models.DailySummary
+		if err := rows.Scan(&s.Date, &s.TotalExpense, &s.TotalIncome); err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+
+	return summaries, nil
+}
+
+func (r *UserRepository) GetWeeklySummary(ctx context.Context, userID int) ([]models.WeeklySummary, error) {
+	query := `
+	WITH user_participant AS (
+		SELECT p.id AS participant_id
+		FROM accounts a
+		JOIN wallets w ON w.id = a.id
+		JOIN participants p ON p.ref_id = w.id AND p.type = 'wallet'
+		WHERE a.id = $1
+	),
+	weekly_summary AS (
+		SELECT
+			date_trunc('week', t.created_at)::date AS week_start,
+			SUM(CASE WHEN t.id_sender = up.participant_id THEN t.total ELSE 0 END) AS total_expense,
+			SUM(CASE WHEN t.id_receiver = up.participant_id THEN t.total ELSE 0 END) AS total_income
+		FROM transactions t
+		JOIN user_participant up 
+			ON t.id_sender = up.participant_id OR t.id_receiver = up.participant_id
+		WHERE t.created_at >= date_trunc('month', CURRENT_DATE)
+		AND t.created_at < (date_trunc('month', CURRENT_DATE) + interval '1 month')
+		GROUP BY date_trunc('week', t.created_at)
+	)
+	SELECT 
+		week_start,
+		week_start + interval '6 days' AS week_end,
+		COALESCE(ws.total_expense, 0) AS total_expense,
+		COALESCE(ws.total_income, 0) AS total_income
+	FROM weekly_summary ws
+	ORDER BY week_start;`
+
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var summaries []models.WeeklySummary
+	for rows.Next() {
+		var s models.WeeklySummary
+		if err := rows.Scan(&s.WeekStart, &s.WeekEnd, &s.TotalExpense, &s.TotalIncome); err != nil {
+			return nil, err
+		}
+		summaries = append(summaries, s)
+	}
+
+	return summaries, nil
 }

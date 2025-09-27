@@ -12,3 +12,11 @@ type ResponseLogin struct {
 	Token      string `json:"token"`
 	IsPinExist bool   `json:"isPinExist" example:"false"`
 }
+
+type PaginatedResponse[T any] struct {
+	Success    bool   `json:"success"`
+	Message    string `json:"message"`
+	Data       T      `json:"data"`
+	Page       int    `json:"page"`
+	TotalPages int    `json:"total_pages"`
+}

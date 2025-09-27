@@ -43,10 +43,9 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[string]{
+	ctx.JSON(http.StatusCreated, models.Response[any]{
 		Success: true,
 		Message: "Register account successful",
-		Data:    "",
 	})
 }
 
@@ -121,9 +120,81 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[string]{
+	ctx.JSON(http.StatusOK, models.Response[any]{
 		Success: true,
 		Message: "Successfully logged out",
+	})
+}
+
+func (h *AuthHandler) VerifyPIN(c *gin.Context) {
+	var req models.PINRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Ambil ID dari token
+	id, err := utils.GetUserIDFromJWT(c)
+	if err != nil {
+		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	// Ambil pin yang tersimpan dari repo
+	storedPIN, err := h.Repo.VerifyUserPIN(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch account"})
+		return
+	}
+
+	// Compare di handler
+	hashConfig := pkg.NewHashConfig()
+	hashConfig.UseRecommended()
+	valid, err := hashConfig.ComparePasswordAndHash(req.PIN, storedPIN)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compare pin"})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.Response[bool]{
+		Success: true,
+		Message: "Success Verify PIN",
+		Data:    valid,
+	})
+}
+
+func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
+	var req models.PINRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.HandleError(ctx, http.StatusBadRequest, "Bad Request", "failed binding data", err)
+		return
+	}
+
+	//Get ID from Token
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "unable to get user's token", err)
+		return
+	}
+
+	// Hash Password
+	hashConfig := pkg.NewHashConfig()
+	hashConfig.UseRecommended()
+	hashedPIN, err := hashConfig.GenHash(req.PIN)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed hashed password", err)
+		return
+	}
+
+	if err := h.Repo.UpdatePIN(ctx, hashedPIN, uid); err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed created account", err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, models.Response[string]{
+		Success: true,
+		Message: "Register PIN successful",
 		Data:    "",
 	})
 }
