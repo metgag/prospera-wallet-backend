@@ -38,7 +38,7 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 		return err
 	}
 
-	// Pastikan rollback hanya dijalankan kalau error
+	// Rollback kalau error
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback(ctx)
@@ -56,10 +56,13 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 			return errors.New("amount must be greater than zero")
 		}
 
+		// Internal (sender)
 		senderID, err = r.getOrCreateParticipant(ctx, tx, "internal", *txReq.InternalAccountID)
 		if err != nil {
 			return err
 		}
+
+		// Wallet user (receiver)
 		receiverID, err = r.getOrCreateParticipant(ctx, tx, "wallet", userID)
 		if err != nil {
 			return err
@@ -73,10 +76,13 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 			return errors.New("amount must be greater than zero")
 		}
 
+		// Wallet sender
 		senderID, err = r.getOrCreateParticipant(ctx, tx, "wallet", userID)
 		if err != nil {
 			return err
 		}
+
+		// Wallet receiver
 		receiverID, err = r.getOrCreateParticipant(ctx, tx, "wallet", *txReq.ReceiverAccountID)
 		if err != nil {
 			return err
@@ -86,12 +92,51 @@ func (r *TransactionRepository) CreateTransaction(ctx context.Context, txReq *mo
 		return errors.New("invalid transaction type")
 	}
 
+	// Catat transaksi
 	_, err = tx.Exec(ctx, `
 		INSERT INTO transactions (type, amount, total, note, id_sender, id_receiver)
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`, txReq.Type, txReq.Amount, txReq.Total, txReq.Note, senderID, receiverID)
 	if err != nil {
 		return err
+	}
+
+	// Update saldo sesuai tipe transaksi
+	switch txReq.Type {
+	case "transfer":
+		// Kurangi saldo sender
+		_, err = tx.Exec(ctx, `
+			UPDATE wallets w
+			SET balance = balance - $1, updated_at = NOW()
+			FROM participants p
+			WHERE p.id = $2 AND p.ref_id = w.id AND p.type = 'wallet'
+		`, txReq.Amount, senderID)
+		if err != nil {
+			return err
+		}
+
+		// Tambah saldo receiver
+		_, err = tx.Exec(ctx, `
+			UPDATE wallets w
+			SET balance = balance + $1, updated_at = NOW()
+			FROM participants p
+			WHERE p.id = $2 AND p.ref_id = w.id AND p.type = 'wallet'
+		`, txReq.Amount, receiverID)
+		if err != nil {
+			return err
+		}
+
+	case "top_up":
+		// Tambah saldo receiver (wallet user)
+		_, err = tx.Exec(ctx, `
+			UPDATE wallets w
+			SET balance = balance + $1, updated_at = NOW()
+			FROM participants p
+			WHERE p.id = $2 AND p.ref_id = w.id AND p.type = 'wallet'
+		`, txReq.Amount, receiverID)
+		if err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit(ctx)

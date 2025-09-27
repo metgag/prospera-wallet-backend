@@ -309,3 +309,24 @@ func (h *UserHandler) GetSummary(c *gin.Context) {
 		utils.HandleError(c, http.StatusInternalServerError, "Internal Server Error", "invalid range type, must be 'daily' or 'weekly", err)
 	}
 }
+
+// GET BALANCE
+func (h *UserHandler) GetBalance(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid token", err)
+		return
+	}
+
+	balance, err := h.ur.GetBalanceByWalletID(ctx.Request.Context(), uid)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusNotFound, "Not Found", "wallet not found", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[any]{
+		Success: true,
+		Message: "Wallet balance fetched successfully",
+		Data:    balance,
+	})
+}
