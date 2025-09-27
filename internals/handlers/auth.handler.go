@@ -39,7 +39,7 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	}
 
 	if err := h.Repo.Register(ctx, req.Email, hashedPassword); err != nil {
-		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "failed created account", err)
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "Email is already registered", err)
 		return
 	}
 
