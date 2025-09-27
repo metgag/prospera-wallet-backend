@@ -21,9 +21,10 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 // GET PROFILE
 func (ur *UserRepository) GetProfile(ctx context.Context, uid int) (*models.Profile, error) {
 	sql := `
-		SELECT fullname, phone, img, verified
-		FROM profiles
-		WHERE id = $1
+		SELECT p.fullname, p.phone, p.img, p.verified, a.email
+		FROM profiles p
+		JOIN accounts a ON a.id = p.id
+		WHERE p.id = $1
 	`
 
 	row := ur.db.QueryRow(ctx, sql, uid)
@@ -34,6 +35,7 @@ func (ur *UserRepository) GetProfile(ctx context.Context, uid int) (*models.Prof
 		&profile.PhoneNumber,
 		&profile.Avatar,
 		&profile.Verified,
+		&profile.Email,
 	)
 	if err != nil {
 		return nil, err
