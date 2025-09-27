@@ -133,3 +133,23 @@ func (ur *Auth) VerifyUserPIN(ctx context.Context, userID int) (string, error) {
 	return storedPIN, nil
 
 }
+
+func (ur *Auth) CheckEmail(ctx context.Context, emailInput string) (bool, error) {
+	var dummy string
+
+	query := `
+	select
+		email
+	from
+		accounts
+	where
+		email = $1`
+	if err := ur.db.QueryRow(ctx, query, emailInput).Scan(&dummy); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil // email not found
+		}
+		return false, err
+	}
+
+	return true, nil
+}
