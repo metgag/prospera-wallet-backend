@@ -420,3 +420,24 @@ func (r *UserRepository) DeleteAvatar(ctx context.Context, uid int) error {
 
 	return nil
 }
+
+func (r *UserRepository) GetUserById(ctx context.Context, uid int) (models.User, error) {
+	sql := `
+		SELECT id, fullname, phone, img, verified
+		FROM profiles
+		WHERE id = $1
+	`
+
+	var user models.User
+	if err := r.db.QueryRow(ctx, sql, uid).Scan(
+		&user.ID,
+		&user.FullName,
+		&user.PhoneNumber,
+		&user.Avatar,
+		&user.Verified,
+	); err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}

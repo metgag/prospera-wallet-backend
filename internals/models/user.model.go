@@ -15,6 +15,7 @@ type User struct {
 	FullName    *string `json:"full_name"`
 	PhoneNumber *string `json:"phone_number"`
 	Avatar      *string `json:"avatar"`
+	Verified    bool    `json:"verified"`
 }
 
 type TransactionHistory struct {
