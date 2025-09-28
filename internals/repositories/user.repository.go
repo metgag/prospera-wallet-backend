@@ -97,7 +97,7 @@ func (ur *UserRepository) UpdateProfile(ctx context.Context, uid int, updates ma
 // GET ALL USERS
 func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.User, error) {
 	sql := `
-		SELECT fullname, phone, img
+		SELECT id, fullname, phone, img
 		FROM profiles
 		WHERE id != $1
 	`
@@ -112,6 +112,7 @@ func (ur *UserRepository) GetAllUser(rctx context.Context, uid int) ([]models.Us
 	for rows.Next() {
 		var user models.User
 		if err := rows.Scan(
+			&user.ID,
 			&user.FullName,
 			&user.PhoneNumber,
 			&user.Avatar,
