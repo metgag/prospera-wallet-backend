@@ -26,7 +26,11 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 
 	// Forgot Password and PIN
 	auth.POST("/forgot", handler.Forgot)
+
+	// Reset PIN
 	auth.POST("/reset-pin", handler.ResetPIN)
+
+	// Reset Password
 	auth.POST("/reset-password", handler.ResetPassword)
 
 	// Create Or Change PIN
@@ -35,8 +39,7 @@ func InitAuthRoutes(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	// Verify PIN
 	auth.POST("/verify-pin", middlewares.Authentication, handler.VerifyPIN)
 
-	// Verify email
-	// How to use? localhost:8080/auth/check?email=user12@mail.com
-	auth.GET("/check", handler.CheckEmail)
+	// // Verify email
+	// auth.GET("/verify-password", handler.CheckEmail)
 
 }
