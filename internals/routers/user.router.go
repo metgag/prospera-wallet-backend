@@ -20,6 +20,9 @@ func InitUserRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	// GET PROFILE
 	userGroup.GET("", uh.GetProfile)
 
+	// GET USER WITH ID
+	userGroup.GET("/:id", uh.GetUserWithId)
+
 	// PATCH PROFILE
 	userGroup.PATCH("", uh.UpdateProfile)
 
