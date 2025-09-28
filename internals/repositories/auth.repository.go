@@ -181,3 +181,44 @@ func (r *Auth) SaveResetToken(userID int, token string, expiredAt time.Time) err
 	_, err := r.db.Exec(context.Background(), query, userID, token, expiredAt)
 	return err
 }
+
+func (ur *Auth) ResetPIN(rctx context.Context, newPin string, token string) error {
+	sql := `
+		UPDATE accounts
+		SET pin = $1,
+			token = NULL,
+		    expired_at = NULL,
+		    updated_at = NOW()
+		WHERE token = $2 and expired_at > NOW()
+	`
+	ctag, err := ur.db.Exec(rctx, sql, newPin, token)
+	if err != nil {
+		return err
+	}
+	if ctag.RowsAffected() == 0 {
+		return errors.New("unable to update user's PIN")
+	}
+
+	return nil
+}
+
+func (ur *Auth) ResetPassword(rctx context.Context, newPassword string, token string) error {
+	sql := `
+		UPDATE accounts
+		SET password = $1,
+			token = NULL,
+		    expired_at = NULL,
+		    updated_at = NOW()
+		WHERE token = $2
+	`
+
+	ctag, err := ur.db.Exec(rctx, sql, newPassword, token)
+	if err != nil {
+		return err
+	}
+	if ctag.RowsAffected() == 0 {
+		return errors.New("unable to update user's Password")
+	}
+
+	return nil
+}
