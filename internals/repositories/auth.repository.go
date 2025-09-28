@@ -154,6 +154,7 @@ func (ur *Auth) VerifyUserPIN(ctx context.Context, userID int) (string, error) {
 // 	return true, nil
 // }
 
+// Forgot Password and PIN
 func (r *Auth) FindByEmail(email string) (*models.ForgotPasswordScan, error) {
 	var user models.ForgotPasswordScan
 	query := `
@@ -182,6 +183,7 @@ func (r *Auth) SaveResetToken(userID int, token string, expiredAt time.Time) err
 	return err
 }
 
+// Reset PIN and Password
 func (ur *Auth) ResetPIN(rctx context.Context, newPin string, token string) error {
 	sql := `
 		UPDATE accounts
