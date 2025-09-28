@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -157,6 +158,15 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 		return
 	}
 
+	if !valid {
+		c.JSON(http.StatusBadRequest, models.Response[bool]{
+			Success: false,
+			Message: "PIN does not match",
+			Data:    valid,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, models.Response[bool]{
 		Success: true,
 		Message: "Success Verify PIN",
@@ -220,4 +230,29 @@ func (h *AuthHandler) CheckEmail(ctx *gin.Context) {
 			"exists": exists,
 		},
 	})
+}
+
+func (h *AuthHandler) ForgotPassword(ctx *gin.Context) {
+	var req models.ForgotPasswordRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.HandleError(ctx, 400, "Bad Request", "Invalid request", err)
+		return
+	}
+
+	// 1. Cek user
+	user, err := h.Repo.FindByEmail(req.Email)
+	if err != nil {
+		utils.HandleError(ctx, 404, "Not Found", "Email not found", err)
+		return
+	}
+
+	// 2. Generate token
+	token := utils.GenerateRandomToken()
+	h.Repo.SaveResetToken(user.ID, token, time.Now().Add(15*time.Minute))
+
+	// 3. Kirim email
+	resetURL := os.Getenv("URL_FORGOT_PASSWORD") + token
+	utils.SendResetPasswordEmail(user.Email, resetURL)
+
+	ctx.JSON(200, gin.H{"message": "Reset link sent to your email"})
 }

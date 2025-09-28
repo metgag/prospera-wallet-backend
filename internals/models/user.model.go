@@ -11,6 +11,7 @@ type Profile struct {
 }
 
 type User struct {
+	ID          int     `json:"id"`
 	FullName    *string `json:"full_name"`
 	PhoneNumber *string `json:"phone_number"`
 	Avatar      *string `json:"avatar"`
