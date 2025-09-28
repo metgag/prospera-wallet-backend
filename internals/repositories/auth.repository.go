@@ -211,7 +211,7 @@ func (ur *Auth) ResetPassword(rctx context.Context, newPassword string, token st
 			token = NULL,
 		    expired_at = NULL,
 		    updated_at = NOW()
-		WHERE token = $2
+		WHERE token = $2 AND expired_at > NOW()
 	`
 
 	ctag, err := ur.db.Exec(rctx, sql, newPassword, token)
