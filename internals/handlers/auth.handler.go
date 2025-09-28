@@ -316,6 +316,6 @@ func (h *AuthHandler) ResetPassword(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusCreated, models.Response[any]{
 		Success: true,
-		Message: "Reset PIN successful",
+		Message: "Reset Password successful",
 	})
 }
