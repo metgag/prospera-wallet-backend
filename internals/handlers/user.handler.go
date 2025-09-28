@@ -119,16 +119,16 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 		return
 	}
 
-	var cachedData []models.User
-	var redisKey = fmt.Sprintf("Prospera-AllUser-%d", uid)
-	if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
-		ctx.JSON(http.StatusOK, models.Response[[]models.User]{
-			Success: true,
-			Message: "Success Get History (from cache)",
-			Data:    cachedData,
-		})
-		return
-	}
+	// var cachedData []models.User
+	// var redisKey = fmt.Sprintf("Prospera-AllUser-%d", uid)
+	// if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
+	// 	ctx.JSON(http.StatusOK, models.Response[[]models.User]{
+	// 		Success: true,
+	// 		Message: "Success Get History (from cache)",
+	// 		Data:    cachedData,
+	// 	})
+	// 	return
+	// }
 
 	users, err := uh.ur.GetAllUser(ctx.Request.Context(), uid)
 	if err != nil {
@@ -136,9 +136,9 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 		return
 	}
 
-	if err := utils.RenewCache(ctx.Request.Context(), uh.rdb, redisKey, users, 10); err != nil {
-		log.Println("Failed to set redis cache:", err)
-	}
+	// if err := utils.RenewCache(ctx.Request.Context(), uh.rdb, redisKey, users, 10); err != nil {
+	// 	log.Println("Failed to set redis cache:", err)
+	// }
 
 	ctx.JSON(http.StatusOK, models.Response[[]models.User]{
 		Success: true,
@@ -328,5 +328,24 @@ func (h *UserHandler) GetBalance(ctx *gin.Context) {
 		Success: true,
 		Message: "Wallet balance fetched successfully",
 		Data:    balance,
+	})
+}
+
+func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
+	uid, err := utils.GetUserIDFromJWT(ctx)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusUnauthorized, "Unauthorized", "invalid token", err)
+		return
+	}
+
+	if err := h.ur.DeleteAvatar(ctx.Request.Context(), uid); err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "Unable to remove user's avatar", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[string]{
+		Success: true,
+		Message: "User's avatar removed",
+		Data:    "success",
 	})
 }
