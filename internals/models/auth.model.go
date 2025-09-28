@@ -41,10 +41,10 @@ type ForgotPasswordScan struct {
 
 type PINResetRequest struct {
 	PIN   string `json:"pin" example:"123456"`
-	Token string `json:"reset" example:"1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a"`
+	Token string `json:"token" example:"1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a"`
 }
 
 type PasswordResetRequest struct {
 	Password string `json:"password" example:"User!23456789"`
-	Token    string `json:"reset" example:"1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a"`
+	Token    string `json:"token" example:"1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a"`
 }
