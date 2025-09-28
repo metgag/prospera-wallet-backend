@@ -349,3 +349,20 @@ func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
 		Data:    "success",
 	})
 }
+
+// GET USER BASED FROM ID
+func (h *UserHandler) GetUserWithId(ctx *gin.Context) {
+	uid, _ := strconv.Atoi(ctx.Param("id"))
+
+	user, err := h.ur.GetUserById(ctx.Request.Context(), uid)
+	if err != nil {
+		utils.HandleError(ctx, http.StatusInternalServerError, "Internal Server Error", "Unable to get user's", err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.Response[models.User]{
+		Success: true,
+		Message: "success",
+		Data:    user,
+	})
+}
