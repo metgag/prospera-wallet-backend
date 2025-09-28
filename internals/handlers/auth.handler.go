@@ -157,6 +157,15 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 		return
 	}
 
+	if !valid {
+		c.JSON(http.StatusBadRequest, models.Response[bool]{
+			Success: false,
+			Message: "PIN does not match",
+			Data:    valid,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, models.Response[bool]{
 		Success: true,
 		Message: "Success Verify PIN",
