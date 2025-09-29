@@ -1,0 +1,14 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: RESTful API of Prospera wallet systeme
+  title: PROSPERA BACKEND
+  version: "1.0"
+paths: {}
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
