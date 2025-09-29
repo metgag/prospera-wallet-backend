@@ -26,6 +26,16 @@ func NewUserHandler(ur *repositories.UserRepository, rdb *redis.Client) *UserHan
 }
 
 // GET PROFILE
+// GetProfile godoc
+//
+//	@Summary		Get user profile
+//	@Description	Retrieve the profile information of the authenticated user
+//	@Tags			User
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	models.Response{data=models.Profile}	"Success Get Profile User"
+//	@Failure		500	{object}	models.Response							"Internal Server Error"
+//	@Router			/user [get]
 func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -36,7 +46,7 @@ func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 	var cachedData models.Profile
 	var redisKey = fmt.Sprintf("Prospera-Profile-%d", uid)
 	if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
-		ctx.JSON(http.StatusOK, models.Response[models.Profile]{
+		ctx.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get Profile User (from cache)",
 			Data:    cachedData,
@@ -54,7 +64,7 @@ func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 		log.Println("Failed to set redis cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[models.Profile]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Success Get Profile User",
 		Data:    *profile,
@@ -62,6 +72,22 @@ func (uh *UserHandler) GetProfile(ctx *gin.Context) {
 }
 
 // UPDATE PROFILE
+// UpdateProfile godoc
+//
+//	@Summary		Update user profile
+//	@Description	Update user's fullname, phone, and avatar image
+//	@Tags			User
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			fullname	formData	string			false	"Full name of the user"
+//	@Param			phone		formData	string			false	"Phone number of the user"
+//	@Param			img			formData	file			false	"Avatar image file"
+//	@Success		200			{object}	models.Response	"Profile updated successfully"
+//	@Failure		400			{object}	models.Response	"Bad Request"
+//	@Failure		401			{object}	models.Response	"Unauthorized"
+//	@Failure		500			{object}	models.Response	"Internal Server Error"
+//	@Router			/user/ [patch]
 func (uh *UserHandler) UpdateProfile(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -105,13 +131,24 @@ func (uh *UserHandler) UpdateProfile(ctx *gin.Context) {
 		log.Println("Failed invalidate cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[any]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Profile updated successfully",
 	})
 }
 
 // GET ALL USERS
+// GetAllUsers godoc
+//
+//	@Summary		Get all users
+//	@Description	Retrieve a list of all users
+//	@Tags			User
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	models.Response{data=[]models.User}	"User's list"
+//	@Failure		401	{object}	models.Response						"Unauthorized"
+//	@Failure		500	{object}	models.Response						"Internal Server Error"
+//	@Router			/user/all [get]
 func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -122,7 +159,7 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 	var cachedData []models.User
 	var redisKey = fmt.Sprintf("Prospera-AllUser-%d", uid)
 	if err := utils.CacheHit(ctx.Request.Context(), uh.rdb, redisKey, &cachedData); err == nil {
-		ctx.JSON(http.StatusOK, models.Response[[]models.User]{
+		ctx.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get All Users (from cache)",
 			Data:    cachedData,
@@ -140,7 +177,7 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 		log.Println("Failed to set redis cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[[]models.User]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "User's list",
 		Data:    users,
@@ -148,6 +185,18 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 }
 
 // GET HISTORY TRANSACTIONS
+// GetUserHistoryTransactions godoc
+//
+//	@Summary		Get user transaction history
+//	@Description	Returns paginated list of user's transaction history
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			page	query		int	false	"Page number"
+//	@Success		200		{object}	models.PaginatedResponse{data=[]models.TransactionHistory}
+//	@Failure		400		{object}	models.Response
+//	@Failure		500		{object}	models.Response
+//	@Router			/user/history [get]
 func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 	// Ambil user_id dari Token
 	userID, err := utils.GetUserIDFromJWT(c)
@@ -169,7 +218,7 @@ func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 		var cachedData []models.TransactionHistory
 		var redisKey = fmt.Sprintf("Prospera-HistoryTransaction-%d-%d", page, userID)
 		if err := utils.CacheHit(c.Request.Context(), h.rdb, redisKey, &cachedData); err == nil {
-			c.JSON(http.StatusOK, models.Response[any]{
+			c.JSON(http.StatusOK, models.Response{
 				Success: true,
 				Message: "Success Get History Transaction (from cache)",
 				Data:    cachedData,
@@ -194,7 +243,7 @@ func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, models.PaginatedResponse[[]models.TransactionHistory]{
+	c.JSON(http.StatusOK, models.PaginatedResponse{
 		Success:    true,
 		Message:    "Success Load History",
 		Data:       transactions,
@@ -204,6 +253,19 @@ func (h *UserHandler) GetUserHistoryTransactions(c *gin.Context) {
 }
 
 // DELETE HISTORY TRANSACTIONS
+// HandleSoftDeleteTransaction godoc
+//
+//	@Summary		Soft delete a transaction from user history
+//	@Description	Marks a transaction as deleted for the authenticated user (soft delete)
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Param			id	path	int	true	"Transaction ID"
+//	@Produce		json
+//	@Success		200	{object}	models.Response	"Success response"
+//	@Failure		400	{object}	models.Response	"Bad Request, invalid transaction id"
+//	@Failure		401	{object}	models.Response	"Unauthorized, invalid or missing token"
+//	@Failure		500	{object}	models.Response	"Internal Server Error"
+//	@Router			/user/history/{id} [delete]
 func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -226,7 +288,7 @@ func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 		log.Println("Failed invalidate cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[string]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "success",
 		Data:    "history deleted",
@@ -234,6 +296,20 @@ func (uh *UserHandler) HandleSoftDeleteTransaction(ctx *gin.Context) {
 }
 
 // POST CHANGE PASSWORD
+// ChangePassword godoc
+//
+//	@Summary		Change user password
+//	@Description	Allows authenticated user to change their password by providing the old password and new password
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		models.ChangePassword	true	"Password change payload"
+//	@Success		201		{object}	models.Response			"Password changed successfully"
+//	@Failure		400		{object}	models.Response			"Bad request, validation error or old password mismatch"
+//	@Failure		401		{object}	models.Response			"Unauthorized, invalid or missing token"
+//	@Failure		500		{object}	models.Response			"Internal server error"
+//	@Router			/user/password [post]
 func (uh *UserHandler) ChangePassword(ctx *gin.Context) {
 	var req models.ChangePassword
 
@@ -282,13 +358,27 @@ func (uh *UserHandler) ChangePassword(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[any]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Change password successful",
 	})
 }
 
 // GET SUMMARY
+// GetSummary godoc
+//
+//	@Summary		Get user's financial summary
+//	@Description	Get income and expense summary (daily or weekly)
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			range	query		string										false	"daily or weekly"	Enums(daily, weekly)
+//	@Success		200		{object}	models.Response{data=models.DailySummary}	//		jika				daily
+//	@Success		200		{object}	models.Response{data=models.WeeklySummary}	//		jika				weekly
+//	@Failure		400		{object}	models.Response
+//	@Failure		401		{object}	models.Response
+//	@Failure		500		{object}	models.Response
+//	@Router			/user/summary [get]
 func (h *UserHandler) GetSummary(c *gin.Context) {
 	// Ambil user ID
 	userID, err := utils.GetUserIDFromJWT(c)
@@ -303,7 +393,7 @@ func (h *UserHandler) GetSummary(c *gin.Context) {
 	var cachedData models.Profile
 	var redisKey = fmt.Sprintf("Prospera-Summary-%s-%d", rangeType, userID)
 	if err := utils.CacheHit(c.Request.Context(), h.rdb, redisKey, &cachedData); err == nil {
-		c.JSON(http.StatusOK, models.Response[any]{
+		c.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: fmt.Sprintf("Success Get Summary %s (from cache)", rangeType),
 			Data:    cachedData,
@@ -321,7 +411,7 @@ func (h *UserHandler) GetSummary(c *gin.Context) {
 		if err := utils.RenewCache(c.Request.Context(), h.rdb, redisKey, summaries, 10); err != nil {
 			log.Println("Failed to set redis cache:", err)
 		}
-		c.JSON(http.StatusOK, models.Response[any]{
+		c.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get Summary Daily",
 			Data:    summaries,
@@ -336,7 +426,7 @@ func (h *UserHandler) GetSummary(c *gin.Context) {
 		if err := utils.RenewCache(c.Request.Context(), h.rdb, redisKey, summaries, 10); err != nil {
 			log.Println("Failed to set redis cache:", err)
 		}
-		c.JSON(http.StatusOK, models.Response[any]{
+		c.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get Summary Daily",
 			Data:    summaries,
@@ -350,6 +440,18 @@ func (h *UserHandler) GetSummary(c *gin.Context) {
 }
 
 // GET BALANCE
+// GetBalance godoc
+//
+//	@Summary		Get wallet balance
+//	@Description	Fetch the current wallet balance for the authenticated user.
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	models.Response{data=int}	"Success"
+//	@Failure		401	{object}	models.Response				"Unauthorized"
+//	@Failure		404	{object}	models.Response				"Wallet not found"
+//	@Failure		500	{object}	models.Response				"Internal server error"
+//	@Router			/user/wallet [get]
 func (h *UserHandler) GetBalance(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -360,7 +462,7 @@ func (h *UserHandler) GetBalance(ctx *gin.Context) {
 	var cachedData int
 	var redisKey = fmt.Sprintf("Prospera-Balance-%d", uid)
 	if err := utils.CacheHit(ctx.Request.Context(), h.rdb, redisKey, &cachedData); err == nil {
-		ctx.JSON(http.StatusOK, models.Response[any]{
+		ctx.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get Balance (from cache)",
 			Data:    cachedData,
@@ -378,13 +480,24 @@ func (h *UserHandler) GetBalance(ctx *gin.Context) {
 		log.Println("Failed to set redis cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[any]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Wallet balance fetched successfully",
 		Data:    balance,
 	})
 }
 
+// RemoveAvatar godoc
+//
+//	@Summary		Remove user avatar
+//	@Description	Removes the current avatar of the authenticated user.
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	models.Response{data=string}	"User's avatar removed"
+//	@Failure		401	{object}	models.Response					"Unauthorized"
+//	@Failure		500	{object}	models.Response					"Internal Server Error"
+//	@Router			/user/avatar [delete]
 func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -402,7 +515,7 @@ func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
 		log.Println("Failed invalidate cache:", err)
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[string]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "User's avatar removed",
 		Data:    "success",
@@ -410,6 +523,18 @@ func (h *UserHandler) RemoveAvatar(ctx *gin.Context) {
 }
 
 // GET USER BASED FROM ID
+// GetUserWithId godoc
+//
+//	@Summary		Get User Profile By ID
+//	@Description	Retrieve a single user by their ID
+//	@Tags			User
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			id	path		int	true	"User ID"
+//	@Success		200	{object}	models.Response{data=models.User}
+//	@Failure		400	{object}	models.Response
+//	@Failure		500	{object}	models.Response
+//	@Router			/user/{id} [get]
 func (h *UserHandler) GetUserWithId(ctx *gin.Context) {
 	uid, _ := strconv.Atoi(ctx.Param("id"))
 
@@ -419,7 +544,7 @@ func (h *UserHandler) GetUserWithId(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[models.User]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "success",
 		Data:    user,

@@ -31,14 +31,14 @@ type TransactionHistory struct {
 }
 
 type DailySummary struct {
-	Date         time.Time `json:"date"`
-	TotalExpense int       `json:"total_expense"`
-	TotalIncome  int       `json:"total_income"`
+	Date         time.Time `json:"date" example:"2025-09-29"`
+	TotalExpense int       `json:"total_expense" example:"75000"`
+	TotalIncome  int       `json:"total_income" example:"100000"`
 }
 
 type WeeklySummary struct {
-	WeekStart    time.Time `json:"week_start"`
-	WeekEnd      time.Time `json:"week_end"`
-	TotalExpense int       `json:"total_expense"`
-	TotalIncome  int       `json:"total_income"`
+	WeekStart    time.Time `json:"week_start" example:"2025-09-23"`
+	WeekEnd      time.Time `json:"week_end" example:"2025-09-29"`
+	TotalExpense int       `json:"total_expense" example:"250000"`
+	TotalIncome  int       `json:"total_income" example:"320000"`
 }

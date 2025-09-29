@@ -1,11 +1,898 @@
 basePath: /
+definitions:
+  models.ChangePINRequest:
+    properties:
+      new_pin:
+        example: "123123"
+        type: string
+      old_pin:
+        example: "123456"
+        type: string
+    type: object
+  models.ChangePassword:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  models.DailySummary:
+    properties:
+      date:
+        example: "2025-09-29"
+        type: string
+      total_expense:
+        example: 75000
+        type: integer
+      total_income:
+        example: 100000
+        type: integer
+    type: object
+  models.ForgotRequest:
+    properties:
+      email:
+        type: string
+      type:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        example: user1@mail.com
+        type: string
+      password:
+        example: User!23456789
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.PINRequest:
+    properties:
+      pin:
+        example: "123456"
+        type: string
+    type: object
+  models.PINResetRequest:
+    properties:
+      pin:
+        example: "123456"
+        type: string
+      token:
+        example: 1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a
+        type: string
+    type: object
+  models.PaginatedResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      page:
+        type: integer
+      success:
+        type: boolean
+      total_pages:
+        type: integer
+    type: object
+  models.PasswordResetRequest:
+    properties:
+      password:
+        example: User!23456789
+        type: string
+      token:
+        example: 1d9a25ef-5a08-46f3-9c21-6d3a2e9e6f7a
+        type: string
+    type: object
+  models.Profile:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      phone_number:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        example: user1@mail.com
+        type: string
+      password:
+        example: User!23456789
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.Response:
+    properties:
+      data: {}
+      message:
+        example: Request processed successfully
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.ResponseLogin:
+    properties:
+      email:
+        example: user1@mail.com
+        type: string
+      isPinExist:
+        example: false
+        type: boolean
+      message:
+        example: Login successful
+        type: string
+      success:
+        example: true
+        type: boolean
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  models.TransactionHistory:
+    properties:
+      counterparty_img:
+        type: string
+      counterparty_name:
+        type: string
+      counterparty_phone:
+        type: string
+      counterparty_type:
+        type: string
+      created_at:
+        type: string
+      direction:
+        type: string
+      id:
+        type: integer
+      total:
+        type: number
+      type:
+        type: string
+    type: object
+  models.TransactionRequest:
+    properties:
+      amount:
+        type: integer
+      internal_account_id:
+        description: wajib kalau top_up
+        type: integer
+      note:
+        type: string
+      pin:
+        description: PIN tidak dibutuhkan untuk topup
+        type: string
+      receiver_account_id:
+        description: wajib kalau transfer
+        type: integer
+      total:
+        type: integer
+      type:
+        enum:
+        - top_up
+        - transfer
+        type: string
+    required:
+    - amount
+    - total
+    - type
+    type: object
+  models.User:
+    properties:
+      avatar:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      phone_number:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  models.WeeklySummary:
+    properties:
+      total_expense:
+        example: 250000
+        type: integer
+      total_income:
+        example: 320000
+        type: integer
+      week_end:
+        example: "2025-09-29"
+        type: string
+      week_start:
+        example: "2025-09-23"
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
   description: RESTful API of Prospera wallet systeme
   title: PROSPERA BACKEND
   version: "1.0"
-paths: {}
+paths:
+  /auth:
+    delete:
+      description: Invalidate the current JWT by blacklisting the token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged out
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized or token expired
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Failed to blacklist token
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token if successful
+      parameters:
+      - description: User login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/models.ResponseLogin'
+        "400":
+          description: failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: invalid username or password
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: user not found or failed to generate token
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/change-pin:
+    post:
+      consumes:
+      - application/json
+      description: Verify old PIN and update to new PIN for authenticated user
+      parameters:
+      - description: Change PIN payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePINRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Change PIN successful
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: PIN does not match or failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user's PIN
+      tags:
+      - Auth
+  /auth/forgot:
+    post:
+      consumes:
+      - application/json
+      description: Sends a reset link to the registered email for password or PIN
+        reset
+      parameters:
+      - description: Forgot password or PIN request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ForgotRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset link sent to your email
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Email not found
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Request reset link for password or PIN
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account by providing email and password
+      parameters:
+      - description: User registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Register account successful
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: failed hashed password or Email is already registered
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Register new user
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset password by providing new password and valid reset token
+      parameters:
+      - description: Reset Password payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reset Password successful
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Failed to reset password
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Reset user's password using reset token
+      tags:
+      - Auth
+  /auth/reset-pin:
+    post:
+      consumes:
+      - application/json
+      description: Reset PIN by providing new PIN and valid reset token
+      parameters:
+      - description: Reset PIN payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PINResetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reset PIN successful
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Failed to reset PIN
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Reset user's PIN using reset token
+      tags:
+      - Auth
+  /auth/update-pin:
+    post:
+      consumes:
+      - application/json
+      description: Update or create PIN for authenticated user
+      parameters:
+      - description: PIN update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PINRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Register PIN successful
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: failed binding data
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: failed to update PIN
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Register or update user's PIN
+      tags:
+      - Auth
+  /auth/verify-pin:
+    post:
+      consumes:
+      - application/json
+      description: Validate the input PIN against the stored hash for the authenticated
+        user
+      parameters:
+      - description: PIN verification payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PINRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success Verify PIN
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: PIN does not match or invalid request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Verify user's PIN
+      tags:
+      - Auth
+  /internal:
+    get:
+      description: Retrieve list of all internal accounts, uses cache for optimization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success get internal accounts
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Failed to get internal accounts
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all internal accounts
+      tags:
+      - InternalAccount
+  /transaction:
+    post:
+      consumes:
+      - application/json
+      description: Create a new transaction. For transfer, PIN verification is required.
+      parameters:
+      - description: Transaction Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction Success
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized / Invalid token
+          schema:
+            $ref: '#/definitions/models.Response'
+        "403":
+          description: Forbidden / Invalid PIN
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a transaction (top-up or transfer)
+      tags:
+      - Transaction
+  /user:
+    get:
+      description: Retrieve the profile information of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success Get Profile User
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Profile'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - User
+  /user/:
+    patch:
+      consumes:
+      - multipart/form-data
+      description: Update user's fullname, phone, and avatar image
+      parameters:
+      - description: Full name of the user
+        in: formData
+        name: fullname
+        type: string
+      - description: Phone number of the user
+        in: formData
+        name: phone
+        type: string
+      - description: Avatar image file
+        in: formData
+        name: img
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - User
+  /user/{id}:
+    get:
+      description: Retrieve a single user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get User Profile By ID
+      tags:
+      - User
+  /user/all:
+    get:
+      description: Retrieve a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's list
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - User
+  /user/avatar:
+    delete:
+      description: Removes the current avatar of the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's avatar removed
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove user avatar
+      tags:
+      - User
+  /user/history:
+    get:
+      description: Returns paginated list of user's transaction history
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.TransactionHistory'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user transaction history
+      tags:
+      - User
+  /user/history/{id}:
+    delete:
+      description: Marks a transaction as deleted for the authenticated user (soft
+        delete)
+      parameters:
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request, invalid transaction id
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized, invalid or missing token
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Soft delete a transaction from user history
+      tags:
+      - User
+  /user/password:
+    post:
+      consumes:
+      - application/json
+      description: Allows authenticated user to change their password by providing
+        the old password and new password
+      parameters:
+      - description: Password change payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePassword'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad request, validation error or old password mismatch
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized, invalid or missing token
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - User
+  /user/summary:
+    get:
+      description: Get income and expense summary (daily or weekly)
+      parameters:
+      - description: daily or weekly
+        enum:
+        - daily
+        - weekly
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.WeeklySummary'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user's financial summary
+      tags:
+      - User
+  /user/wallet:
+    get:
+      description: Fetch the current wallet balance for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.Response'
+            - properties:
+                data:
+                  type: integer
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Wallet not found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.Response'
+      security:
+      - BearerAuth: []
+      summary: Get wallet balance
+      tags:
+      - User
 securityDefinitions:
   BearerAuth:
     in: header
