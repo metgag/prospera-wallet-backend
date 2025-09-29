@@ -272,7 +272,7 @@ func (h *AuthHandler) Forgot(ctx *gin.Context) {
 	if req.Type == "password" {
 		resetURL = os.Getenv("URL_FORGOT_PASSWORD") + token
 	} else {
-		resetURL = os.Getenv("URL_FORGOT_PASSWORD") + token
+		resetURL = os.Getenv("URL_FORGOT_PIN") + token
 	}
 
 	utils.SendResetPasswordEmail(user.Email, resetURL, req.Type)
