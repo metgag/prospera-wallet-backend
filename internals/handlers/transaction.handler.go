@@ -24,6 +24,21 @@ func NewTransactionHandler(repo *repositories.TransactionRepository, rdb *redis.
 }
 
 // Create Transactions
+// CreateTransaction godoc
+//
+//	@Summary		Create a transaction (top-up or transfer)
+//	@Description	Create a new transaction. For transfer, PIN verification is required.
+//	@Tags			Transaction
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		models.TransactionRequest	true	"Transaction Request"
+//	@Success		200		{object}	models.Response				"Transaction Success"
+//	@Failure		400		{object}	models.Response				"Bad Request"
+//	@Failure		401		{object}	models.Response				"Unauthorized / Invalid token"
+//	@Failure		403		{object}	models.Response				"Forbidden / Invalid PIN"
+//	@Failure		500		{object}	models.Response				"Internal Server Error"
+//	@Router			/transaction [post]
 func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 	uid, err := utils.GetUserIDFromJWT(ctx)
 	if err != nil {
@@ -111,7 +126,7 @@ func (h *TransactionHandler) CreateTransaction(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[any]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Transaction Success",
 	})
