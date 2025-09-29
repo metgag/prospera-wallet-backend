@@ -268,7 +268,13 @@ func (h *AuthHandler) Forgot(ctx *gin.Context) {
 	h.Repo.SaveResetToken(user.ID, token, time.Now().Add(15*time.Minute))
 
 	// Kirim email
-	resetURL := os.Getenv("URL_FORGOT_PASSWORD") + token
+	var resetURL string
+	if req.Type == "password" {
+		resetURL = os.Getenv("URL_FORGOT_PASSWORD") + token
+	} else {
+		resetURL = os.Getenv("URL_FORGOT_PASSWORD") + token
+	}
+
 	utils.SendResetPasswordEmail(user.Email, resetURL, req.Type)
 
 	ctx.JSON(200, models.Response[any]{
