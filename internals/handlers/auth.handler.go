@@ -270,9 +270,9 @@ func (h *AuthHandler) Forgot(ctx *gin.Context) {
 	// Kirim email
 	var resetURL string
 	if req.Type == "password" {
-		resetURL = os.Getenv("URL_FORGOT_PASSWORD") + token
+		resetURL = fmt.Sprintf("%sauth/create/password?token=%s", os.Getenv("URL_BASE"), token)
 	} else {
-		resetURL = os.Getenv("URL_FORGOT_PIN") + token
+		resetURL = fmt.Sprintf("%sauth/create/pin?token=%s", os.Getenv("URL_BASE"), token)
 	}
 
 	utils.SendResetPasswordEmail(user.Email, resetURL, req.Type)
