@@ -20,11 +20,21 @@ func NewInternalAccountHandler(repo *repositories.InternalAccountRepository, rdb
 	return &InternalAccountHandler{repo: repo, rdb: rdb}
 }
 
+// GetAll godoc
+//
+//	@Summary		Get all internal accounts
+//	@Description	Retrieve list of all internal accounts, uses cache for optimization
+//	@Tags			InternalAccount
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	models.Response	"Success get internal accounts"
+//	@Failure		500	{object}	models.Response	"Failed to get internal accounts"
+//	@Router			/internal [get]
 func (h *InternalAccountHandler) GetAll(c *gin.Context) {
 	var cachedData []models.InternalAccount
 	var redisKey = "Prospera-InternalAccount"
 	if err := utils.CacheHit(c.Request.Context(), h.rdb, redisKey, &cachedData); err == nil {
-		c.JSON(http.StatusOK, models.Response[any]{
+		c.JSON(http.StatusOK, models.Response{
 			Success: true,
 			Message: "Success Get Internal Account (from cache)",
 			Data:    cachedData,
@@ -42,7 +52,7 @@ func (h *InternalAccountHandler) GetAll(c *gin.Context) {
 		log.Println("Failed to set redis cache:", err)
 	}
 
-	c.JSON(http.StatusOK, models.Response[any]{
+	c.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Success get internal accounts",
 		Data:    accounts,

@@ -24,3 +24,8 @@ seed:
 	done
 print-dbrul:
 	echo $(DBURL)
+swag-all:
+	swag fmt
+	swag init -d ./cmd
+	swag init -g ./cmd/main.go
+	go run ./cmd/main.go

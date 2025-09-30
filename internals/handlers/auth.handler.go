@@ -26,6 +26,18 @@ func NewAuthHandler(repo *repositories.Auth, rdb *redis.Client) *AuthHandler {
 	return &AuthHandler{Repo: repo, rdb: rdb}
 }
 
+// Register godoc
+//
+//	@Summary		Register new user
+//	@Description	Create a new user account by providing email and password
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.RegisterRequest	true	"User registration payload"
+//	@Success		201		{object}	models.Response			"Register account successful"
+//	@Failure		400		{object}	models.Response			"failed binding data"
+//	@Failure		500		{object}	models.Response			"failed hashed password or Email is already registered"
+//	@Router			/auth/register [post]
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	var req models.RegisterRequest
 
@@ -56,12 +68,25 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[any]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Register account successful",
 	})
 }
 
+// Login godoc
+//
+//	@Summary		Login user
+//	@Description	Authenticate user and return JWT token if successful
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.LoginRequest		true	"User login payload"
+//	@Success		200		{object}	models.ResponseLogin	"Login successful"
+//	@Failure		400		{object}	models.Response			"failed binding data"
+//	@Failure		401		{object}	models.Response			"invalid username or password"
+//	@Failure		500		{object}	models.Response			"user not found or failed to generate token"
+//	@Router			/auth [post]
 func (h *AuthHandler) Login(ctx *gin.Context) {
 	var req models.LoginRequest
 
@@ -110,6 +135,17 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	})
 }
 
+// Logout godoc
+//
+//	@Summary		Logout user
+//	@Description	Invalidate the current JWT by blacklisting the token
+//	@Tags			Auth
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	models.Response	"Successfully logged out"
+//	@Failure		401	{object}	models.Response	"Unauthorized or token expired"
+//	@Failure		500	{object}	models.Response	"Failed to blacklist token"
+//	@Router			/auth [delete]
 func (h *AuthHandler) Logout(ctx *gin.Context) {
 	token, err := utils.GetToken(ctx)
 	if err != nil {
@@ -134,12 +170,25 @@ func (h *AuthHandler) Logout(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, models.Response[any]{
+	ctx.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Successfully logged out",
 	})
 }
 
+// VerifyPIN godoc
+//
+//	@Summary		Verify user's PIN
+//	@Description	Validate the input PIN against the stored hash for the authenticated user
+//	@Tags			Auth
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.PINRequest	true	"PIN verification payload"
+//	@Success		200		{object}	models.Response		"Success Verify PIN"
+//	@Failure		400		{object}	models.Response		"PIN does not match or invalid request"
+//	@Failure		500		{object}	models.Response		"Internal server error"
+//	@Router			/auth/verify-pin [post]
 func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 	var req models.PINRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -171,7 +220,7 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 	}
 
 	if !valid {
-		c.JSON(http.StatusBadRequest, models.Response[bool]{
+		c.JSON(http.StatusBadRequest, models.Response{
 			Success: false,
 			Message: "PIN does not match",
 			Data:    valid,
@@ -179,13 +228,26 @@ func (h *AuthHandler) VerifyPIN(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.Response[bool]{
+	c.JSON(http.StatusOK, models.Response{
 		Success: true,
 		Message: "Success Verify PIN",
 		Data:    valid,
 	})
 }
 
+// UpdatePIN godoc
+//
+//	@Summary		Register or update user's PIN
+//	@Description	Update or create PIN for authenticated user
+//	@Tags			Auth
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.PINRequest	true	"PIN update payload"
+//	@Success		201		{object}	models.Response		"Register PIN successful"
+//	@Failure		400		{object}	models.Response		"failed binding data"
+//	@Failure		500		{object}	models.Response		"failed to update PIN"
+//	@Router			/auth/update-pin [post]
 func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
 	var req models.PINRequest
 
@@ -215,16 +277,29 @@ func (h *AuthHandler) UpdatePIN(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[string]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Register PIN successful",
 		Data:    "",
 	})
 }
 
-// Used in profile/change-pin
-// Check old pin, if matches then update to new pin
+// ChangePIN godoc
+//
+//	@Summary		Change user's PIN
+//	@Description	Verify old PIN and update to new PIN for authenticated user
+//	@Tags			Auth
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.ChangePINRequest	true	"Change PIN payload"
+//	@Success		201		{object}	models.Response			"Change PIN successful"
+//	@Failure		400		{object}	models.Response			"PIN does not match or failed binding data"
+//	@Failure		500		{object}	models.Response			"Internal server error"
+//	@Router			/auth/change-pin [post]
 func (h *AuthHandler) ChangePIN(ctx *gin.Context) {
+	// Used in profile/change-pin
+	// Check old pin, if matches then update to new pin
 	var req models.ChangePINRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -257,7 +332,7 @@ func (h *AuthHandler) ChangePIN(ctx *gin.Context) {
 	}
 
 	if !valid {
-		ctx.JSON(http.StatusBadRequest, models.Response[bool]{
+		ctx.JSON(http.StatusBadRequest, models.Response{
 			Success: false,
 			Message: "PIN does not match",
 			Data:    valid,
@@ -278,7 +353,7 @@ func (h *AuthHandler) ChangePIN(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[string]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Change PIN successful",
 		Data:    "",
@@ -298,7 +373,7 @@ func (h *AuthHandler) ChangePIN(ctx *gin.Context) {
 // 		return
 // 	}
 
-// 	ctx.JSON(http.StatusOK, models.Response[map[string]bool]{
+// 	ctx.JSON(http.StatusOK, models.Response{
 // 		Success: true,
 // 		Message: "Email check successful",
 // 		Data: map[string]bool{
@@ -307,6 +382,18 @@ func (h *AuthHandler) ChangePIN(ctx *gin.Context) {
 // 	})
 // }
 
+// Forgot godoc
+//
+//	@Summary		Request reset link for password or PIN
+//	@Description	Sends a reset link to the registered email for password or PIN reset
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.ForgotRequest	true	"Forgot password or PIN request"
+//	@Success		200		{object}	models.Response			"Reset link sent to your email"
+//	@Failure		400		{object}	models.Response			"Invalid request"
+//	@Failure		404		{object}	models.Response			"Email not found"
+//	@Router			/auth/forgot [post]
 func (h *AuthHandler) Forgot(ctx *gin.Context) {
 	var req models.ForgotRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -340,12 +427,24 @@ func (h *AuthHandler) Forgot(ctx *gin.Context) {
 
 	utils.SendResetPasswordEmail(user.Email, resetURL, req.Type)
 
-	ctx.JSON(200, models.Response[any]{
+	ctx.JSON(200, models.Response{
 		Success: true,
 		Message: "Reset link sent to your email",
 	})
 }
 
+// ResetPIN godoc
+//
+//	@Summary		Reset user's PIN using reset token
+//	@Description	Reset PIN by providing new PIN and valid reset token
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.PINResetRequest	true	"Reset PIN payload"
+//	@Success		201		{object}	models.Response			"Reset PIN successful"
+//	@Failure		400		{object}	models.Response			"Failed binding data"
+//	@Failure		500		{object}	models.Response			"Failed to reset PIN"
+//	@Router			/auth/reset-pin [post]
 func (h *AuthHandler) ResetPIN(ctx *gin.Context) {
 	var req models.PINResetRequest
 
@@ -367,12 +466,24 @@ func (h *AuthHandler) ResetPIN(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[any]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Reset PIN successful",
 	})
 }
 
+// ResetPassword godoc
+//
+//	@Summary		Reset user's password using reset token
+//	@Description	Reset password by providing new password and valid reset token
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.PasswordResetRequest	true	"Reset Password payload"
+//	@Success		201		{object}	models.Response				"Reset Password successful"
+//	@Failure		400		{object}	models.Response				"Failed binding data"
+//	@Failure		500		{object}	models.Response				"Failed to reset password"
+//	@Router			/auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(ctx *gin.Context) {
 	var req models.PasswordResetRequest
 
@@ -394,7 +505,7 @@ func (h *AuthHandler) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, models.Response[any]{
+	ctx.JSON(http.StatusCreated, models.Response{
 		Success: true,
 		Message: "Reset Password successful",
 	})

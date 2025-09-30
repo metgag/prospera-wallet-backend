@@ -11,6 +11,16 @@ import (
 	"github.com/prospera/internals/routers"
 )
 
+//	@title			PROSPERA BACKEND
+//	@version		1.0
+//	@description	RESTful API of Prospera wallet systeme
+
+//	@host		localhost:8080
+//	@basepath	/
+
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
 func main() {
 	// Load ENV
 	err := godotenv.Load()
